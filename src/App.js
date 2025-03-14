@@ -1,13 +1,14 @@
+import "./App.css";
 
-import './App.css';
-import Dashboard from './modules/Dashboard';
-import Form from './modules/Form';
+import { Route } from "react-router-dom";
+import HomePage from "./page/HomePage";
+import ChatPage from "./page/ChatPage";
 
 function App() {
   return (
-    <div className='bg-[#c2d5f0] h-screen flex justify-center items-center'>
-      {/* <Form /> */}
-      <Dashboard />
+    <div className="App">
+      <Route exact path="/" component={HomePage} />
+      <Route path="/chat" component={ChatPage} />
     </div>
   );
 }
