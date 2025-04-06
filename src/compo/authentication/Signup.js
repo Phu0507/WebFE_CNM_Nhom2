@@ -12,19 +12,19 @@ import {
 import { PasswordInput } from "../../components/ui/password-input";
 import { toaster } from "../../components/ui/toaster";
 import axios from "axios";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
-  const [name, setName] = useState();
+  const [fullName, setFullName] = useState();
   const [email, setEmail] = useState();
   const [password, setPassword] = useState();
   const [confirmPassword, setConfirmPassword] = useState();
   const [loading, setLoading] = useState(false);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const submitHandler = async () => {
     setLoading(true);
-    if (!name || !email || !password || !confirmPassword) {
+    if (!fullName || !email || !password || !confirmPassword) {
       toaster.create({
         title: "Please fill all the fields",
         type: "error",
@@ -47,8 +47,8 @@ const Signup = () => {
         },
       };
       const { data } = await axios.post(
-        "/api/user",
-        { name, email, password },
+        "/users/signup",
+        { fullName, email, password },
         config
       );
       toaster.create({
@@ -57,10 +57,10 @@ const Signup = () => {
       });
       localStorage.setItem("userInfo", JSON.stringify(data));
       setLoading(false);
-      // history.pushState("/chat");
+      navigate("/chats");
     } catch (err) {
       toaster.create({
-        title: err.response.data.message,
+        title: err.response?.data?.error || "Có lỗi xảy ra!",
         type: "error",
       });
       setLoading(false);
@@ -73,49 +73,49 @@ const Signup = () => {
         <Fieldset.Content>
           <Field.Root required>
             <Field.Label>
-              Name
+              Họ tên
               <Field.RequiredIndicator />
             </Field.Label>
             <Input
               name="name"
-              placeholder="Enter your name"
-              onChange={(e) => setName(e.target.value)}
+              placeholder="Nhập họ tên của bạn"
+              onChange={(e) => setFullName(e.target.value)}
             />
           </Field.Root>
 
           <Field.Root required>
             <Field.Label>
-              Email address
+              Địa chỉ email
               <Field.RequiredIndicator />
             </Field.Label>
             <Input
               name="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder="Nhập địa chỉ email"
               onChange={(e) => setEmail(e.target.value)}
             />
           </Field.Root>
 
           <Field.Root required>
             <Field.Label>
-              Password
+              Mật khẩu
               <Field.RequiredIndicator />
             </Field.Label>
             <PasswordInput
               name="password"
-              placeholder="Password"
+              placeholder="Nhập mật khẩu"
               onChange={(e) => setPassword(e.target.value)}
             />
           </Field.Root>
 
           <Field.Root required>
             <Field.Label>
-              Confirm Password
+              Nhập lại mật khẩu
               <Field.RequiredIndicator />
             </Field.Label>
             <PasswordInput
               name="confirmPassword"
-              placeholder="Confirm Password"
+              placeholder="Nhập lại mật khẩu"
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
           </Field.Root>
@@ -128,7 +128,7 @@ const Signup = () => {
           onClick={submitHandler}
           loading={loading}
         >
-          Sign Up
+          Đăng ký
         </Button>
       </Fieldset.Root>
     </VStack>

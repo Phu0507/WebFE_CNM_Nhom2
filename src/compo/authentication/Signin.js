@@ -14,13 +14,13 @@ import {
 import { PasswordInput } from "../../components/ui/password-input";
 import { toaster } from "../../components/ui/toaster";
 import axios from "axios";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Signin = () => {
   const [email, setEmail] = useState();
   const [password, setPassword] = useState();
   const [loading, setLoading] = useState(false);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const submitHandler = async () => {
     setLoading(true);
@@ -40,7 +40,7 @@ const Signin = () => {
         },
       };
       const { data } = await axios.post(
-        "/api/user/signin",
+        "/users/signin",
         { email, password },
         config
       );
@@ -50,10 +50,10 @@ const Signin = () => {
       });
       localStorage.setItem("userInfo", JSON.stringify(data));
       setLoading(false);
-      // history.pushState("/chat");
+      navigate("/chats");
     } catch (err) {
       toaster.create({
-        title: err.response.data.message,
+        title: err.response?.data?.error || "Có lỗi xảy ra!",
         type: "error",
       });
       setLoading(false);
@@ -66,13 +66,13 @@ const Signin = () => {
         <Fieldset.Content>
           <Field.Root required>
             <Field.Label>
-              Email address
+              Địa chỉ email
               <Field.RequiredIndicator />
             </Field.Label>
             <Input
               name="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder="Nhập địa chỉ email của bạn"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -80,12 +80,12 @@ const Signin = () => {
 
           <Field.Root required>
             <Field.Label>
-              Password
+              Mật khẩu
               <Field.RequiredIndicator />
             </Field.Label>
             <PasswordInput
               name="password"
-              placeholder="Password"
+              placeholder="Nhập mật khẩu"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -98,7 +98,7 @@ const Signin = () => {
           onClick={submitHandler}
           loading={loading}
         >
-          Sign In
+          Đăng nhập
         </Button>
       </Fieldset.Root>
     </VStack>
