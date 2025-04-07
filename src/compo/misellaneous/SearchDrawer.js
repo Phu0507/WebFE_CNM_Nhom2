@@ -7,11 +7,13 @@ import {
   Text,
   Input,
   Box,
+  Spinner,
 } from "@chakra-ui/react";
 import { FaSearch } from "react-icons/fa";
 import { ChatState } from "../../context/ChatProvider";
 import ChatLoading from "./ChatLoading";
 import UserListItem from "../userAvatar/UserListItem";
+import { toaster } from "../../components/ui/toaster";
 import axios from "axios";
 
 const SearchDrawer = () => {
@@ -20,7 +22,9 @@ const SearchDrawer = () => {
   const [loading, setLoading] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
 
-  const { user } = ChatState();
+  const [open, setOpen] = useState(false);
+
+  const { user, setSelectedChat, chats, setChats } = ChatState();
   const handleSearch = async (event) => {
     const query = event.target.value;
     setSearch(query);
@@ -49,11 +53,39 @@ const SearchDrawer = () => {
     }
   };
 
-  const accessChat = async (userId) => {};
+  const accessChat = async (userId) => {
+    try {
+      setLoadingChat(true);
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+      };
 
+      const { data } = await axios.post("/api/chat", { userId }, config);
+      if (!chats.find((chat) => chat._id === data._id)) {
+        setChats([data, ...chats]);
+      }
+
+      setSelectedChat(data);
+      setLoadingChat(false);
+      setOpen(false); // Đóng drawer sau khi chọn chat
+    } catch (err) {
+      toaster.create({
+        title: err.response?.data?.error || "Có lỗi xảy ra khi truy cập chat",
+        type: "error",
+      });
+      throw new Error(err);
+    }
+  };
   return (
     <>
-      <Drawer.Root placement="start">
+      <Drawer.Root
+        placement="start"
+        open={open}
+        onOpenChange={(e) => setOpen(e.open)}
+      >
         <Drawer.Trigger asChild>
           <Button variant="ghost" size="sm">
             <FaSearch />
@@ -94,10 +126,11 @@ const SearchDrawer = () => {
                   )}
                 </Box>
               </Drawer.Body>
-              {/* <Drawer.Footer>
-                <Button variant="outline">Cancel</Button>
-                <Button>Save</Button>
-              </Drawer.Footer> */}
+              <Drawer.Footer>
+                {/* <Button variant="outline">Cancel</Button>
+                <Button>Save</Button> */}
+                {loadingChat && <Spinner ml={"auto"} display={"flex"} />}
+              </Drawer.Footer>
               <Drawer.CloseTrigger asChild>
                 <CloseButton size="sm" />
               </Drawer.CloseTrigger>

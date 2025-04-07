@@ -3,9 +3,24 @@ import React from "react";
 
 const ChatLoading = () => {
   return (
-    <Stack gap="6" maxW="xs">
+    <Stack gap="10" maxW="xs">
       <HStack width="full">
-        <SkeletonCircle size="10" />
+        <SkeletonCircle size="12" />
+        <SkeletonText noOfLines={2} />
+      </HStack>
+
+      <HStack width="full">
+        <SkeletonCircle size="12" />
+        <SkeletonText noOfLines={2} />
+      </HStack>
+
+      <HStack width="full">
+        <SkeletonCircle size="12" />
+        <SkeletonText noOfLines={2} />
+      </HStack>
+
+      <HStack width="full">
+        <SkeletonCircle size="12" />
         <SkeletonText noOfLines={2} />
       </HStack>
     </Stack>
