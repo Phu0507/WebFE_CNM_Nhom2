@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   CloseButton,
@@ -23,6 +23,15 @@ const SearchDrawer = () => {
   const [loadingChat, setLoadingChat] = useState(false);
 
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setSearch("");
+      setSearchResult([]);
+      setLoading(false);
+      setLoadingChat(false);
+    }
+  }, [open]);
 
   const { user, setSelectedChat, chats, setChats } = ChatState();
   const handleSearch = async (event) => {

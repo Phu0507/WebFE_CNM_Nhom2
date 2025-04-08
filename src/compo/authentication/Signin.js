@@ -91,15 +91,24 @@ const Signin = () => {
             />
           </Field.Root>
         </Fieldset.Content>
-        <Button
-          type="submit"
-          alignSelf="flex-start"
-          colorPalette={"blue"}
-          onClick={submitHandler}
-          loading={loading}
-        >
-          Đăng nhập
-        </Button>
+        <HStack justify="space-between">
+          <Button
+            type="submit"
+            alignSelf="flex-start"
+            colorPalette={"blue"}
+            onClick={submitHandler}
+            loading={loading}
+          >
+            Đăng nhập
+          </Button>
+          <Link
+            color="blue.500"
+            fontSize="sm"
+            onClick={() => navigate("/forgotpassword")}
+          >
+            Quên mật khẩu?
+          </Link>
+        </HStack>
       </Fieldset.Root>
     </VStack>
   );

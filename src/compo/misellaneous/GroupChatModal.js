@@ -24,6 +24,15 @@ import ChatLoading from "./ChatLoading";
 import UserBadgeItem from "../userAvatar/UserBadgeItem";
 
 const GroupChatModal = () => {
+  const [open, setOpen] = useState(false);
+  const resetForm = () => {
+    setGroupChatName("");
+    setSelectedUsers([]);
+    setSearch("");
+    setSearchResult([]);
+    setLoading(false);
+  };
+
   const [groupChatName, setGroupChatName] = useState();
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [search, setSearch] = useState();
@@ -58,7 +67,38 @@ const GroupChatModal = () => {
     }
   };
 
-  const handleSubmit = async () => {};
+  const handleSubmit = async () => {
+    if (!groupChatName || !selectedUsers) {
+      toaster.create({
+        title: "Vui lòng nhập tên nhóm và chọn người dùng",
+        type: "error",
+      });
+      return;
+    }
+    try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      };
+      const { data } = await axios.post(
+        "/api/chat/group",
+        {
+          name: groupChatName,
+          users: JSON.stringify(selectedUsers.map((u) => u._id)),
+        },
+        config
+      );
+      setChats([data, ...chats]);
+      resetForm();
+      setOpen(false);
+    } catch (err) {
+      toaster.create({
+        title: err.response?.data?.error || "Không tạo được nhóm!",
+        type: "error",
+      });
+    }
+  };
   const handleGroup = (userAdd) => {
     if (selectedUsers.includes(userAdd)) {
       toaster.create({
@@ -75,7 +115,14 @@ const GroupChatModal = () => {
   };
 
   return (
-    <Dialog.Root size={"lg"}>
+    <Dialog.Root
+      size="lg"
+      open={open}
+      onOpenChange={(e) => {
+        setOpen(e.open);
+        if (!e.open) resetForm();
+      }}
+    >
       <Dialog.Trigger asChild>
         <Button variant="ghost" size="xs" gap="0">
           <RiGroupLine />
@@ -148,7 +195,11 @@ const GroupChatModal = () => {
               <Dialog.ActionTrigger asChild>
                 <Button variant="outline">Hủy</Button>
               </Dialog.ActionTrigger>
-              <Button colorPalette={"blue"} onClick={handleSubmit}>
+              <Button
+                colorPalette={"blue"}
+                onClick={handleSubmit}
+                disabled={!groupChatName || selectedUsers.length === 0}
+              >
                 Tạo nhóm
               </Button>
             </Dialog.Footer>

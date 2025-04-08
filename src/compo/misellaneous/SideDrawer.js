@@ -1,16 +1,24 @@
 import { Box, Button, Menu, Text, Avatar, Portal } from "@chakra-ui/react";
 import { Tooltip } from "../../components/ui/tooltip";
 import React, { useState } from "react";
-import { FaBell, FaAngleDown, FaUser, FaSignOutAlt } from "react-icons/fa";
+import {
+  FaBell,
+  FaAngleDown,
+  FaUser,
+  FaSignOutAlt,
+  FaLock,
+} from "react-icons/fa";
 import { ChatState } from "../../context/ChatProvider";
 import ProfileModel from "./ProfileModel";
 import LogoutHandler from "./LogoutHandler";
 import SearchDrawer from "./SearchDrawer";
+import ChangePassword from "./ChangePassword";
 import { ColorModeButton } from "../../components/ui/color-mode";
 
 const SideDrawer = () => {
   const [isProfileOpen, setProfileOpen] = useState(false);
   const [isLogoutOpen, setLogoutOpen] = useState(false);
+  const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const { user } = ChatState();
 
@@ -70,6 +78,18 @@ const SideDrawer = () => {
 
                   <Menu.Separator />
                   <Menu.Item
+                    value="change-password"
+                    cursor={"pointer"}
+                    onClick={() => setChangePasswordOpen(true)}
+                  >
+                    Đổi mật khẩu
+                    <Menu.ItemCommand>
+                      <FaLock />
+                    </Menu.ItemCommand>
+                  </Menu.Item>
+
+                  <Menu.Separator />
+                  <Menu.Item
                     value="logout"
                     cursor={"pointer"}
                     onClick={() => setLogoutOpen(true)}
@@ -98,6 +118,12 @@ const SideDrawer = () => {
         <LogoutHandler
           isOpen={isLogoutOpen}
           onClose={() => setLogoutOpen(false)}
+        />
+      )}
+      {isChangePasswordOpen && (
+        <ChangePassword
+          isOpen={isChangePasswordOpen}
+          onClose={() => setChangePasswordOpen(false)}
         />
       )}
     </>
