@@ -7,15 +7,15 @@ import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
   const [value, setValue] = useState("first");
-  const navigate = useNavigate(); // Sử dụng useNavigate thay vì useHistory
+  const navigate = useNavigate();
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("userInfo"));
 
     if (user) {
-      navigate("/chats"); // Dùng navigate thay vì history.push
+      navigate("/chats");
     }
-  }, [navigate]); // Dùng navigate thay vì history
+  }, [navigate]);
 
   return (
     <Container maxW="xl" centerContent>

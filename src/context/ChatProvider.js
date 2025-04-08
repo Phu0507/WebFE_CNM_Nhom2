@@ -17,7 +17,9 @@ const ChatProvider = ({ children }) => {
     } else {
       if (
         location.pathname !== "/" &&
-        location.pathname !== "/forgotpassword"
+        location.pathname !== "/forgotpassword" &&
+        location.pathname !== "/otp" &&
+        location.pathname !== "/resetpassword"
       ) {
         navigate("/");
       }

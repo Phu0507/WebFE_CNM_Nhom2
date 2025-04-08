@@ -33,6 +33,13 @@ const ChangePassword = ({ isOpen, onClose }) => {
       setLoading(false);
       return;
     }
+    if (newPassword.length < 8) {
+      toaster.create({
+        title: "Mật khẩu phải có ít nhất 8 ký tự",
+        type: "error",
+      });
+      return;
+    }
     if (newPassword !== confirmNewPassword) {
       toaster.create({
         title: "Mật khẩu mới không khớp",

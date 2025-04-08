@@ -1,10 +1,8 @@
 import React from "react";
-
 import { Box, Container, Text, Tabs } from "@chakra-ui/react";
+import OTPAuthentication from "../compo/authentication/OTPAuthentication";
 
-import ForgotPassword from "../compo/authentication/ForgotPassword";
-
-const ForgotPasswordPage = () => {
+const OTPPage = () => {
   return (
     <Container maxW="xl" centerContent>
       <Box
@@ -31,11 +29,11 @@ const ForgotPasswordPage = () => {
       >
         <Tabs.Root fitted variant="subtle" value={"first"}>
           <Tabs.List>
-            <Tabs.Trigger value="first">Quên mật khẩu</Tabs.Trigger>
+            <Tabs.Trigger value="first">Xác thực OTP</Tabs.Trigger>
           </Tabs.List>
 
           <Tabs.Content value="first">
-            <ForgotPassword />
+            <OTPAuthentication />
           </Tabs.Content>
         </Tabs.Root>
       </Box>
@@ -43,4 +41,4 @@ const ForgotPasswordPage = () => {
   );
 };
 
-export default ForgotPasswordPage;
+export default OTPPage;
