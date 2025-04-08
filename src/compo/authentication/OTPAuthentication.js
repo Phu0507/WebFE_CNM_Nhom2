@@ -32,11 +32,50 @@ const OTPAuthentication = () => {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!canResend) return;
-    console.log("Gửi lại mã OTP cho:", location.state.email);
-    setCountdown(60);
-    setCanResend(false);
+
+    const email = location.state?.email;
+    if (!email) {
+      toaster.create({
+        title: "Không tìm thấy địa chỉ email",
+        type: "error",
+      });
+      return;
+    }
+
+    console.log("Gửi lại mã OTP cho:", email);
+
+    try {
+      const response = await fetch("http://localhost:5000/users/send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Gửi lại OTP thất bại");
+      }
+
+      localStorage.setItem("otpAccess", "true");
+
+      toaster.create({
+        title: data.message || "Mã xác thực đã được gửi lại",
+        type: "info",
+      });
+
+      setCountdown(60);
+      setCanResend(false);
+    } catch (err) {
+      toaster.create({
+        title: err.response?.data?.error || "Lỗi khi gửi lại mã OTP",
+        type: "error",
+      });
+    }
   };
 
   const handleContinue = async () => {
@@ -64,6 +103,7 @@ const OTPAuthentication = () => {
         type: "success",
       });
 
+      localStorage.setItem("otpVerified", "true");
       navigate("/resetpassword", {
         state: {
           email: location.state.email,

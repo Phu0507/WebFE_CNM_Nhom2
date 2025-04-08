@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Group, Input } from "@chakra-ui/react";
+import { Button, Group, Input, VStack } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { toaster } from "../../components/ui/toaster";
 
@@ -55,27 +55,32 @@ const ForgotPassword = () => {
   };
 
   return (
-    <Group attached w="full">
-      <Input
-        flex="1"
-        placeholder="Nhập địa chỉ email của bạn"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <Button
-        onClick={handleContinue}
-        loading={loading}
-        loadingText="Đang gửi..."
-        // bg="bg.subtle"
-        variant="outline"
-        _hover={{ backgroundColor: "blue.500", color: "white" }}
-        bg={loading ? "blue.500" : "bg.subtle"}
-        color={loading ? "white" : "black"}
-      >
-        Tiếp tục
+    <VStack spacing={4} w="full">
+      <Group attached w="full">
+        <Input
+          flex="1"
+          placeholder="Nhập địa chỉ email của bạn"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Button
+          onClick={handleContinue}
+          loading={loading}
+          loadingText="Đang gửi..."
+          // bg="bg.subtle"
+          variant="outline"
+          _hover={{ backgroundColor: "blue.500", color: "white" }}
+          bg={loading ? "blue.500" : "bg.subtle"}
+          color={loading ? "white" : "black"}
+        >
+          Tiếp tục
+        </Button>
+      </Group>
+      <Button variant="outline" onClick={() => navigate(-1)}>
+        Quay lại
       </Button>
-    </Group>
+    </VStack>
   );
 };
 

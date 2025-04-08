@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toaster } from "../../components/ui/toaster";
 import { Button, HStack, Field, VStack, Fieldset } from "@chakra-ui/react";
@@ -11,6 +11,17 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { email, otp } = location.state || {};
+
+  useEffect(() => {
+    const otpVerified = localStorage.getItem("otpVerified");
+    if (!otpVerified || otpVerified !== "true" || !email || !otp) {
+      navigate("/");
+    }
+
+    return () => {
+      localStorage.removeItem("otpVerified"); // xóa sau khi vào
+    };
+  }, [navigate, email, otp]);
 
   const submitHandler = async () => {
     if (!newPassword || !confirmNewPassword) {
