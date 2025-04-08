@@ -20,7 +20,7 @@ const UserBadgeItem = ({ user, handleFunction }) => {
       <HStack>
         <Avatar.Root size="2xs">
           <Avatar.Fallback name={user.fullName} />
-          <Avatar.Image src={user.profilePic} />
+          <Avatar.Image src={user.avatar} />
         </Avatar.Root>
         {user.fullName}
       </HStack>

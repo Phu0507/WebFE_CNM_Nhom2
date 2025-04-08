@@ -57,7 +57,7 @@ const SideDrawer = () => {
               <Button variant="outline" p={1}>
                 <Avatar.Root size={"sm"}>
                   <Avatar.Fallback name={user.fullName} />
-                  <Avatar.Image src="https://bit.ly/broken-link" />
+                  <Avatar.Image src={user.avatar} />
                 </Avatar.Root>
                 <FaAngleDown />
               </Button>

@@ -28,8 +28,8 @@ const ProfileModel = ({ isOpen, onClose, user }) => {
                   <DataList.Item>
                     <DataList.ItemValue>
                       <HStack>
-                        <Avatar.Root size="2xl">
-                          <Avatar.Image src={user.profilePic} />
+                        <Avatar.Root size="2xl" cursor={"pointer"}>
+                          <Avatar.Image src={user.avatar} />
                           <Avatar.Fallback name={user.fullName} />
                         </Avatar.Root>
                         <VStack alignItems="flex-start">
@@ -45,10 +45,10 @@ const ProfileModel = ({ isOpen, onClose, user }) => {
                     <DataList.ItemLabel>Email</DataList.ItemLabel>
                     <DataList.ItemValue>{user.email}</DataList.ItemValue>
                   </DataList.Item>
-                  <DataList.Item>
+                  {/* <DataList.Item>
                     <DataList.ItemLabel>So dien thoai</DataList.ItemLabel>
                     <DataList.ItemValue>096703296</DataList.ItemValue>
-                  </DataList.Item>
+                  </DataList.Item> */}
                 </DataList.Root>
               </Dialog.Body>
               <Dialog.Footer

@@ -19,7 +19,7 @@ const UserListItem = ({ user, handleFunction }) => {
     >
       <Avatar.Root size="xl" cursor="pointer">
         <Avatar.Fallback name={user.fullName} />
-        <Avatar.Image src={user.profilePic} />
+        <Avatar.Image src={user.avatar} />
       </Avatar.Root>
       <Box px={3} flexGrow={1}>
         <Text fontWeight="semibold" fontSize="sm">
