@@ -33,23 +33,19 @@ const SideDrawer = () => {
         p="5px 10px 5px 10px"
         borderWidth="5px"
       >
-        <Tooltip
-          content="Search Users to chat"
-          openDelay={300}
-          closeDelay={100}
-        >
-          <SearchDrawer />
-        </Tooltip>
+        <SearchDrawer />
         <Text fontSize="2xl" fontFamily="Poppins" color="#0088FF">
           Zalo
         </Text>
         <div>
           <Menu.Root>
-            <Menu.Trigger asChild>
-              <Button variant="ghost" p={0}>
-                <FaBell />
-              </Button>
-            </Menu.Trigger>
+            <Tooltip content="Thông báo" openDelay={300} closeDelay={100}>
+              <Menu.Trigger asChild>
+                <Button variant="ghost" p={0}>
+                  <FaBell />
+                </Button>
+              </Menu.Trigger>
+            </Tooltip>
           </Menu.Root>
 
           <Menu.Root>

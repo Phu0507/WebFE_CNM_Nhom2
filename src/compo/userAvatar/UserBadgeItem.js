@@ -1,4 +1,4 @@
-import { Avatar, Box, Text, HStack } from "@chakra-ui/react";
+import { Avatar, Box, Text, HStack, Flex } from "@chakra-ui/react";
 import React from "react";
 import { FaTimesCircle } from "react-icons/fa";
 
@@ -22,7 +22,9 @@ const UserBadgeItem = ({ user, handleFunction }) => {
           <Avatar.Fallback name={user.fullName} />
           <Avatar.Image src={user.avatar} />
         </Avatar.Root>
-        {user.fullName}
+        <Text maxW="70px" truncate>
+          {user.fullName}
+        </Text>
       </HStack>
       <FaTimesCircle
         size={16}

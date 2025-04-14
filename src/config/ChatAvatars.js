@@ -13,7 +13,7 @@ const ChatAvatars = ({ loggedInUser, chat }) => {
         return otherUsers.map((user) => (
           <Avatar.Root key={user._id}>
             <Avatar.Fallback name={user.fullName} />
-            <Avatar.Image src={user.profilePic} />
+            <Avatar.Image src={user.avatar} />
           </Avatar.Root>
         ));
       }
@@ -27,7 +27,7 @@ const ChatAvatars = ({ loggedInUser, chat }) => {
           {displayedUsers.map((user) => (
             <Avatar.Root key={user._id}>
               <Avatar.Fallback name={user.fullName} />
-              <Avatar.Image src={user.profilePic} />
+              <Avatar.Image src={user.avatar} />
             </Avatar.Root>
           ))}
           {remainingCount > 0 && (
@@ -43,7 +43,7 @@ const ChatAvatars = ({ loggedInUser, chat }) => {
     return (
       <Avatar.Root size={"xl"}>
         <Avatar.Fallback name={chat.users[0].fullName} />
-        <Avatar.Image src={chat.users[0].profilePic} />
+        <Avatar.Image src={chat.users[0].avatar} />
       </Avatar.Root>
     );
   };

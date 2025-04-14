@@ -6,7 +6,6 @@ import {
   Portal,
   Stack,
   CloseButton,
-  Toast,
   Box,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
@@ -17,14 +16,24 @@ import {
   RiAddLine,
   RiUserAddLine,
 } from "react-icons/ri";
+import { Tooltip } from "../../components/ui/tooltip";
 import { ChatState } from "../../context/ChatProvider";
 import { toaster } from "../../components/ui/toaster";
-import UserListItem from "../userAvatar/UserListItem";
+import UserList from "../userAvatar/UserList";
 import ChatLoading from "./ChatLoading";
 import UserBadgeItem from "../userAvatar/UserBadgeItem";
 
 const GroupChatModal = () => {
   const [open, setOpen] = useState(false);
+  const [groupChatName, setGroupChatName] = useState();
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [search, setSearch] = useState();
+  const [searchResult, setSearchResult] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingButton, setLoadingButton] = useState(false);
+
+  const { user, chats, setChats } = ChatState();
+
   const resetForm = () => {
     setGroupChatName("");
     setSelectedUsers([]);
@@ -32,14 +41,6 @@ const GroupChatModal = () => {
     setSearchResult([]);
     setLoading(false);
   };
-
-  const [groupChatName, setGroupChatName] = useState();
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [search, setSearch] = useState();
-  const [searchResult, setSearchResult] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const { user, chats, setChats } = ChatState();
 
   const handleSearch = async (query) => {
     setSearch(query);
@@ -68,13 +69,7 @@ const GroupChatModal = () => {
   };
 
   const handleSubmit = async () => {
-    if (!groupChatName || !selectedUsers) {
-      toaster.create({
-        title: "Vui lòng nhập tên nhóm và chọn người dùng",
-        type: "error",
-      });
-      return;
-    }
+    setLoadingButton(true);
     try {
       const config = {
         headers: {
@@ -92,22 +87,30 @@ const GroupChatModal = () => {
       setChats([data, ...chats]);
       resetForm();
       setOpen(false);
+      toaster.create({
+        title: "Tạo nhóm thành công",
+        type: "success",
+      });
     } catch (err) {
       toaster.create({
         title: err.response?.data?.error || "Không tạo được nhóm!",
         type: "error",
       });
+    } finally {
+      setLoadingButton(false);
     }
   };
-  const handleGroup = (userAdd) => {
-    if (selectedUsers.includes(userAdd)) {
-      toaster.create({
-        title: "Người dùng đã có trong danh sách",
-        type: "error",
-      });
-      return;
+
+  const handleGroup = (userClick) => {
+    const alreadySelected = selectedUsers.some((u) => u._id === userClick._id);
+
+    if (alreadySelected) {
+      // Nếu đã chọn thì bỏ chọn
+      setSelectedUsers(selectedUsers.filter((u) => u._id !== userClick._id));
+    } else {
+      // Nếu chưa chọn thì thêm vào danh sách
+      setSelectedUsers([...selectedUsers, userClick]);
     }
-    setSelectedUsers([...selectedUsers, userAdd]);
   };
 
   const handleDelete = (userDel) => {
@@ -116,19 +119,21 @@ const GroupChatModal = () => {
 
   return (
     <Dialog.Root
-      size="lg"
+      size="md"
       open={open}
       onOpenChange={(e) => {
         setOpen(e.open);
         if (!e.open) resetForm();
       }}
     >
-      <Dialog.Trigger asChild>
-        <Button variant="ghost" size="xs" gap="0">
-          <RiGroupLine />
-          <RiAddLine />
-        </Button>
-      </Dialog.Trigger>
+      <Tooltip content="Tạo nhóm chat" openDelay={300} closeDelay={100}>
+        <Dialog.Trigger asChild>
+          <Button variant="ghost" size="xs" gap="0">
+            <RiGroupLine />
+            <RiAddLine />
+          </Button>
+        </Dialog.Trigger>
+      </Tooltip>
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -153,24 +158,20 @@ const GroupChatModal = () => {
                 </Field.Root>
               </Stack>
               {(selectedUsers.length > 0 || searchResult.length > 0) && (
-                <Box display="flex" gap="4" mt="4">
+                <Box display="flex" gap="1" mt="2">
                   {/* Box 2 - Search Results */}
-                  <Box
-                    flex="1"
-                    maxHeight="350px"
-                    overflowY="auto"
-                    border="1px solid lightgray"
-                    borderRadius="md"
-                    p="2"
-                  >
+                  <Box flex="1" maxHeight="340px" overflowY="auto">
                     {loading ? (
                       <ChatLoading />
                     ) : (
                       searchResult?.map((user) => (
-                        <UserListItem
+                        <UserList
                           key={user._id}
                           user={user}
-                          handleFunction={() => handleGroup(user)}
+                          isSelected={selectedUsers.some(
+                            (u) => u._id === user._id
+                          )}
+                          handleToggle={handleGroup}
                         />
                       ))
                     )}
@@ -178,7 +179,14 @@ const GroupChatModal = () => {
 
                   {/* Box 1 - Selected Users */}
                   {selectedUsers.length > 0 && (
-                    <Box flex="1" maxWidth={"200px"} overflowY="auto" p="2">
+                    <Box
+                      flex="1"
+                      maxWidth={"160px"}
+                      overflowY="auto"
+                      p="1"
+                      border="1px solid lightgray"
+                      borderRadius="md"
+                    >
                       {selectedUsers.map((user) => (
                         <UserBadgeItem
                           key={user._id}
@@ -198,7 +206,8 @@ const GroupChatModal = () => {
               <Button
                 colorPalette={"blue"}
                 onClick={handleSubmit}
-                disabled={!groupChatName || selectedUsers.length === 0}
+                disabled={!groupChatName || selectedUsers.length < 2}
+                loading={loadingButton}
               >
                 Tạo nhóm
               </Button>

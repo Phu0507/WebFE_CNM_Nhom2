@@ -38,6 +38,7 @@ const ChangePassword = ({ isOpen, onClose }) => {
         title: "Mật khẩu phải có ít nhất 8 ký tự",
         type: "error",
       });
+      setLoading(false);
       return;
     }
     if (newPassword !== confirmNewPassword) {

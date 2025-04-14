@@ -9,7 +9,7 @@ import ChatAvatars from "../../config/ChatAvatars";
 import GroupChatModal from "./GroupChatModal";
 import { RiUserLine, RiAddLine, RiUserAddLine } from "react-icons/ri";
 
-const MyChats = () => {
+const MyChats = ({ fetchAgain }) => {
   const { user, selectedChat, setSelectedChat, chats, setChats } = ChatState();
   const [loggedInUser, setLoggedInUser] = useState();
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ const MyChats = () => {
   useEffect(() => {
     setLoggedInUser(JSON.parse(localStorage.getItem("userInfo")));
     fetchChats();
-  }, []);
+  }, [fetchAgain]);
 
   return (
     <Box
