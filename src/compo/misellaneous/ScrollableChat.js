@@ -92,15 +92,15 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
               )}
 
               {/* Nội dung tin nhắn */}
-              <span
+              <div
                 style={{
                   backgroundColor:
                     m.sender._id === user._id ? "#BEE3F8" : "white",
                   borderRadius: "20px",
-                  padding: "5px 15px",
+                  padding: "10px 15px",
                   display: "inline-block",
-                  whiteSpace: "pre-wrap", //  Giữ khoảng trắng và xuống dòng khi cần
-                  wordBreak: "break-word", //  Bẻ từ nếu quá dài
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
                 }}
               >
                 {m.isRecalled ? (
@@ -108,9 +108,91 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
                     Tin nhắn đã thu hồi
                   </em>
                 ) : (
-                  m.content
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px",
+                    }}
+                  >
+                    {/* Text nếu có */}
+                    {m.content && <span>{m.content}</span>}
+
+                    {/* Ảnh nếu là ảnh */}
+                    {m.type === "image" && m.fileUrl && (
+                      <img
+                        src={m.fileUrl}
+                        alt="image"
+                        onClick={() => window.open(m.fileUrl, "_blank")}
+                        style={{
+                          width: "160px",
+                          height: "160px",
+                          objectFit: "cover",
+                          borderRadius: "10px",
+                          cursor: "pointer", // con trỏ dạng bàn tay
+                          transition: "transform 0.2s",
+                        }}
+                        onMouseOver={(e) =>
+                          (e.currentTarget.style.transform = "scale(1.03)")
+                        }
+                        onMouseOut={(e) =>
+                          (e.currentTarget.style.transform = "scale(1)")
+                        }
+                      />
+                    )}
+
+                    {/* File nếu là file đính kèm */}
+                    {m.type === "file" &&
+                      m.fileUrl &&
+                      (() => {
+                        const fileName = decodeURIComponent(
+                          m.fileUrl.split("/").pop()
+                        );
+                        const extension = fileName
+                          .split(".")
+                          .pop()
+                          .toLowerCase();
+
+                        const fileIcons = {
+                          pdf: "📄",
+                          doc: "📄",
+                          docx: "📄",
+                          xls: "📊",
+                          xlsx: "📊",
+                          ppt: "📽️",
+                          pptx: "📽️",
+                          rar: "🗜️",
+                          zip: "🗜️",
+                          txt: "📄",
+                          mp3: "🎵",
+                          mp4: "🎞️",
+                          default: "📎",
+                        };
+
+                        const icon = fileIcons[extension] || fileIcons.default;
+
+                        return (
+                          <a
+                            href={m.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#3182CE",
+                              textDecoration: "underline",
+                              fontSize: "14px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <span style={{ fontSize: "18px" }}>{icon}</span>
+                            {fileName}
+                          </a>
+                        );
+                      })()}
+                  </div>
                 )}
-              </span>
+              </div>
             </div>
           </div>
         ))}

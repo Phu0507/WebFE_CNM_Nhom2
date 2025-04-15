@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { ChatState } from "../../context/ChatProvider";
-import { Box, Text, Button, HStack, Spinner, Input } from "@chakra-ui/react";
+import {
+  Box,
+  Text,
+  Button,
+  HStack,
+  Spinner,
+  Input,
+  VStack,
+} from "@chakra-ui/react";
 import { FaArrowLeft, FaPhone, FaVideo } from "react-icons/fa";
 import { getSender } from "../../config/ChatLogic";
 // import socket from "../../context/socket";
@@ -8,6 +16,11 @@ import { useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from "axios";
 import { io } from "socket.io-client";
 import ScrollableChat from "./ScrollableChat";
+import {
+  RiImageLine,
+  RiAttachmentLine,
+  RiDeleteBin6Line,
+} from "react-icons/ri";
 
 const socket = io("http://localhost:5000", {
   transports: ["websocket"],
@@ -18,20 +31,58 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const navigate = useNavigate(); // Khởi tạo hook điều hướng
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [newMessage, setNewMessage] = useState();
+  const [newMessage, setNewMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  // const sendMessage = async () => {
+  //   if (!newMessage.trim()) return;
+  //   try {
+  //     const res = await axios.post(
+  //       "http://localhost:5000/api/message",
+  //       { content: newMessage, chatId: selectedChat._id },
+  //       { headers: { Authorization: `Bearer ${user.token}` } }
+  //     );
+  //     socket.emit("newMessage", res.data);
+  //     setNewMessage("");
+  //   } catch (err) {
+  //     console.error("Lỗi gửi tin:", err);
+  //   }
+  // };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !selectedFile) return;
+
+    const formData = new FormData();
+    formData.append("chatId", selectedChat._id);
+    if (newMessage.trim()) formData.append("content", newMessage);
+    if (selectedFile) {
+      formData.append("file", selectedFile);
+
+      const fileType = selectedFile.type;
+      const type = fileType.startsWith("image/") ? "image" : "file";
+      formData.append("type", type);
+    }
+
     try {
       const res = await axios.post(
         "http://localhost:5000/api/message",
-        { content: newMessage, chatId: selectedChat._id },
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
-      socket.emit("newMessage", res.data);
+
+      const newMsg = res.data;
+      // setMessages((prev) => [...prev, newMsg]);
+      socket.emit("newMessage", newMsg);
       setNewMessage("");
+      setSelectedFile(null);
     } catch (err) {
-      console.error("Lỗi gửi tin:", err);
+      console.error("Lỗi gửi tin nhắn:", err);
+      alert("Gửi tin nhắn thất bại");
     }
   };
 
@@ -251,21 +302,100 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 />
               </div>
             )}
-            <HStack mt={3}>
-              <Input
-                placeholder="Nhap text"
-                variant="subtle"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-              <Button
-                colorPalette={"blue"}
-                variant={"solid"}
-                onClick={sendMessage}
-              >
-                Gui
-              </Button>
-            </HStack>
+            <VStack
+              spacing={2}
+              mt={2}
+              pt={3}
+              align="stretch"
+              borderTop="1px solid"
+              borderColor="gray.300"
+            >
+              <HStack>
+                {/* Image Input */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  id="imageUpload"
+                  onChange={(e) => {
+                    setSelectedFile(e.target.files[0]);
+                    e.target.value = ""; // Cho phép chọn lại cùng một file
+                  }}
+                />
+                <label htmlFor="imageUpload">
+                  <RiImageLine size={30} cursor="pointer" />
+                </label>
+
+                {/* File Input (non-image) */}
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt"
+                  style={{ display: "none" }}
+                  id="fileUpload"
+                  onChange={(e) => {
+                    setSelectedFile(e.target.files[0]);
+                    e.target.value = ""; // Cho phép chọn lại cùng một file
+                  }}
+                />
+                <label htmlFor="fileUpload">
+                  <RiAttachmentLine size={30} cursor="pointer" />
+                </label>
+
+                <Input
+                  placeholder="Nhập tin nhắn..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  variant={"subtle"}
+                />
+
+                <Button onClick={sendMessage} colorScheme="blue">
+                  Gửi
+                </Button>
+              </HStack>
+
+              {/* Render ảnh hoặc file đã chọn */}
+              {selectedFile && (
+                <Box
+                  p={2}
+                  borderWidth="1px"
+                  borderRadius="md"
+                  bg="gray.100"
+                  maxW="100px"
+                  borderColor="gray.300"
+                  position="relative" // Thêm position relative để có thể định vị các phần tử con
+                >
+                  {/* Nút "Xóa" nằm ở góc trên bên phải */}
+                  <Button
+                    onClick={() => setSelectedFile(null)}
+                    position="absolute" // Định vị nút ở vị trí tuyệt đối
+                    top={0} // Đặt ở vị trí trên cùng
+                    right={0} // Đặt ở vị trí bên phải
+                    zIndex={1} // Đảm bảo nút luôn hiển thị trên ảnh
+                    variant={"ghost"}
+                    size={"xs"}
+                  >
+                    <RiDeleteBin6Line />
+                  </Button>
+
+                  {/* Hiển thị ảnh nếu là file ảnh */}
+                  {selectedFile.type.startsWith("image/") ? (
+                    <img
+                      src={URL.createObjectURL(selectedFile)}
+                      alt="preview"
+                      style={{
+                        maxHeight: "100px",
+                        borderRadius: "8px",
+                        objectFit: "cover", // Đảm bảo ảnh không bị kéo dài
+                      }}
+                    />
+                  ) : (
+                    <Text truncate fontSize="md">
+                      📎{selectedFile.name}
+                    </Text> // Hiển thị tên file nếu không phải ảnh
+                  )}
+                </Box>
+              )}
+            </VStack>
           </Box>
         </>
       ) : (
