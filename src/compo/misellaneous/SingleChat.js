@@ -1,3 +1,4 @@
+import EmojiPicker from 'emoji-picker-react';
 import React, { useState, useEffect } from "react";
 import { ChatState } from "../../context/ChatProvider";
 import {
@@ -33,6 +34,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // const sendMessage = async () => {
   //   if (!newMessage.trim()) return;
@@ -86,6 +89,11 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
+  const onEmojiClick = (emojiObject) => {
+    setNewMessage(prevMessage => prevMessage + emojiObject.emoji); // Thêm emoji vào tin nhắn
+    setShowEmojiPicker(false); // Đóng emoji picker sau khi chọn emoji
+  };
+
   const recallMessage = async (messageId) => {
     const message = messages.find((msg) => msg._id === messageId);
 
@@ -103,7 +111,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       messageDate.getFullYear() === today.getFullYear();
 
     if (!isSameDay) {
-      alert("Chỉ có thể thu hồi tin nhắn được gửi hôm nay.");
+      alert("Bạn chỉ có thể thu hồi tin nhắn trong 24h.");
       return;
     }
 
@@ -140,6 +148,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       alert(err.response?.data?.message || "Lỗi xóa tin nhắn");
     }
   };
+
 
   useEffect(() => {
     if (!selectedChat) return; // Kiểm tra null/undefined
@@ -347,6 +356,27 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   onChange={(e) => setNewMessage(e.target.value)}
                   variant={"subtle"}
                 />
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)} variant="ghost">
+                    😀
+                  </Button>
+
+                  {showEmojiPicker && (
+                    <div
+                      style={{
+                        position: "fixed",
+                        bottom: "80px",
+                        right: "0",
+                        zIndex: 1000,
+                        background: "#fff",
+                        boxShadow: "0 4px 8px rgba(0,0,0,0.15)",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <EmojiPicker onEmojiClick={onEmojiClick} />
+                    </div>
+                  )}
+                </div>
 
                 <Button onClick={sendMessage} colorScheme="blue">
                   Gửi
@@ -396,6 +426,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 </Box>
               )}
             </VStack>
+
           </Box>
         </>
       ) : (

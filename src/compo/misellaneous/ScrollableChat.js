@@ -14,6 +14,7 @@ import { useId, useState } from "react";
 const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
   const { user } = ChatState();
   const id = useId();
+  const [selectedMsgId, setSelectedMsgId] = useState(null);
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
 
   return (
@@ -23,23 +24,23 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
           <div style={{ display: "flex" }} key={m._id}>
             {(isSameSender(messages, m, i, user._id) ||
               isLastMessage(messages, i, user._id)) && (
-              <Tooltip
-                ids={{ trigger: id }}
-                content={m.sender.fullName}
-                positioning={{ placement: "right-end" }}
-              >
-                <Avatar.Root
-                  ids={{ root: id }}
-                  cursor={"pointer"}
-                  mt={4}
-                  mr={1}
-                  size={"md"}
+                <Tooltip
+                  ids={{ trigger: id }}
+                  content={m.sender.fullName}
+                  positioning={{ placement: "right-end" }}
                 >
-                  <Avatar.Image src={m.sender.avatar} />
-                  <Avatar.Fallback name={m.sender.fullName} />
-                </Avatar.Root>
-              </Tooltip>
-            )}
+                  <Avatar.Root
+                    ids={{ root: id }}
+                    cursor={"pointer"}
+                    mt={4}
+                    mr={1}
+                    size={"md"}
+                  >
+                    <Avatar.Image src={m.sender.avatar} />
+                    <Avatar.Fallback name={m.sender.fullName} />
+                  </Avatar.Root>
+                </Tooltip>
+              )}
 
             {/* Bọc span + menu trong div để kiểm soát hover */}
             <div
@@ -52,55 +53,66 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
               onMouseEnter={() => setHoveredMsgId(m._id)}
               onMouseLeave={() => setHoveredMsgId(null)}
             >
-              {/* Nút Xóa / Thu hồi - nằm bên trái khi là tin nhắn của mình */}
-              {hoveredMsgId === m._id && m.sender._id === user._id && (
+              {hoveredMsgId === m._id && (
                 <div
                   style={{
                     position: "absolute",
                     top: "50%",
-                    left: "-89px", // chỉnh trái tùy theo khoảng cách mong muốn
+                    left: m.sender._id === user._id ? "-90px" : "calc(100% + 4px)",
                     transform: "translateY(-50%)",
                     display: "flex",
                     gap: "4px",
+                    zIndex: 10,
                   }}
                 >
-                  <button
-                    onClick={() => recallMessage(m._id)}
-                    style={{
-                      fontSize: "12px",
-                      padding: "4px 6px",
-                      backgroundColor: "#edf2f7",
-                      borderRadius: "5px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Thu hồi
-                  </button>
-                  <button
-                    onClick={() => deleteMessageForMe(m._id)}
-                    style={{
-                      fontSize: "12px",
-                      padding: "4px 6px",
-                      backgroundColor: "#fed7d7",
-                      borderRadius: "5px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Xóa
-                  </button>
+                  {/* Chỉ hiển thị "Thu hồi", "Xóa" nếu là tin nhắn của mình */}
+                  {m.sender._id === user._id && (
+                    <>
+                      <button
+                        onClick={() => recallMessage(m._id)}
+                        style={{
+                          fontSize: "12px",
+                          padding: "4px 6px",
+                          backgroundColor: "#a0aec0",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Thu hồi
+                      </button>
+                      <button
+                        onClick={() => deleteMessageForMe(m._id)}
+                        style={{
+                          fontSize: "12px",
+                          padding: "4px 6px",
+                          backgroundColor: "#fc8181",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Xóa
+                      </button>
+                    </>
+                  )}
+
+
                 </div>
               )}
 
-              {/* Nội dung tin nhắn */}
               <div
+                onClick={() =>
+                  setSelectedMsgId(selectedMsgId === m._id ? null : m._id)
+                }
                 style={{
-                  backgroundColor:
-                    m.sender._id === user._id ? "#BEE3F8" : "white",
+                  backgroundColor: m.sender._id === user._id ? "#BEE3F8" : "white",
                   borderRadius: "20px",
                   padding: "10px 15px",
                   display: "inline-block",
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
+                  cursor: "pointer",
                 }}
               >
                 {m.isRecalled ? (
@@ -108,13 +120,7 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
                     Tin nhắn đã thu hồi
                   </em>
                 ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     {/* Text nếu có */}
                     {m.content && <span>{m.content}</span>}
 
@@ -123,13 +129,16 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
                       <img
                         src={m.fileUrl}
                         alt="image"
-                        onClick={() => window.open(m.fileUrl, "_blank")}
+                        onClick={(e) => {
+                          e.stopPropagation(); // không toggle thời gian
+                          window.open(m.fileUrl, "_blank");
+                        }}
                         style={{
                           width: "160px",
                           height: "160px",
                           objectFit: "cover",
                           borderRadius: "10px",
-                          cursor: "pointer", // con trỏ dạng bàn tay
+                          cursor: "pointer",
                           transition: "transform 0.2s",
                         }}
                         onMouseOver={(e) =>
@@ -142,17 +151,10 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
                     )}
 
                     {/* File nếu là file đính kèm */}
-                    {m.type === "file" &&
-                      m.fileUrl &&
+                    {m.type === "file" && m.fileUrl &&
                       (() => {
-                        const fileName = decodeURIComponent(
-                          m.fileUrl.split("/").pop()
-                        );
-                        const extension = fileName
-                          .split(".")
-                          .pop()
-                          .toLowerCase();
-
+                        const fileName = decodeURIComponent(m.fileUrl.split("/").pop());
+                        const extension = fileName.split(".").pop().toLowerCase();
                         const fileIcons = {
                           pdf: "📄",
                           doc: "📄",
@@ -168,7 +170,6 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
                           mp4: "🎞️",
                           default: "📎",
                         };
-
                         const icon = fileIcons[extension] || fileIcons.default;
 
                         return (
@@ -176,6 +177,7 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
                             href={m.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             style={{
                               color: "#3182CE",
                               textDecoration: "underline",
@@ -192,7 +194,32 @@ const ScrollableChat = ({ messages, recallMessage, deleteMessageForMe }) => {
                       })()}
                   </div>
                 )}
+
+                {/* Timeline nếu là tin nhắn đang được chọn */}
+                {selectedMsgId === m._id && (
+                  <div
+                    style={{
+                      marginTop: "5px",
+                      fontSize: "12px",
+                      color: "#718096",
+                      textAlign: "right",
+                    }}
+                  >
+                    {new Date(m.createdAt).toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    •{" "}
+                    {new Date(m.createdAt).toLocaleDateString("vi-VN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })}
+                  </div>
+                )}
               </div>
+
+
             </div>
           </div>
         ))}
