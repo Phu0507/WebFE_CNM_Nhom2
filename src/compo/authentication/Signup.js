@@ -1,14 +1,6 @@
 import React, { useState } from "react";
 import { HStack, VStack } from "@chakra-ui/react";
-import {
-  Button,
-  Field,
-  Fieldset,
-  For,
-  Input,
-  NativeSelect,
-  Stack,
-} from "@chakra-ui/react";
+import { Button, Field, Fieldset, Input, RadioGroup } from "@chakra-ui/react";
 import { PasswordInput } from "../../components/ui/password-input";
 import { toaster } from "../../components/ui/toaster";
 import axios from "axios";
@@ -20,13 +12,31 @@ const Signup = () => {
   const [password, setPassword] = useState();
   const [confirmPassword, setConfirmPassword] = useState();
   const [loading, setLoading] = useState(false);
+  const [gender, setGender] = useState();
+  const [dateOfBirth, setDateOfBirth] = useState();
   const navigate = useNavigate();
 
   const submitHandler = async () => {
     setLoading(true);
-    if (!fullName || !email || !password || !confirmPassword) {
+
+    if (/\s/.test(email) || /\s/.test(password) || /\s/.test(confirmPassword)) {
       toaster.create({
-        title: "Please fill all the fields",
+        title: "Email và mật khẩu không được chứa khoảng trắng",
+        type: "error",
+      });
+      setLoading(false);
+      return;
+    }
+    if (
+      !fullName ||
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !dateOfBirth ||
+      !gender
+    ) {
+      toaster.create({
+        title: "Vui lòng điền đầy đủ thông tin đi",
         type: "error",
       });
       setLoading(false);
@@ -34,7 +44,7 @@ const Signup = () => {
     }
     if (password !== confirmPassword) {
       toaster.create({
-        title: "Passwords do not match",
+        title: "Mật khẩu không khớp",
         type: "error",
       });
       setLoading(false);
@@ -48,11 +58,11 @@ const Signup = () => {
       };
       const { data } = await axios.post(
         "/users/signup",
-        { fullName, email, password },
+        { fullName, email, password, dateOfBirth, gender },
         config
       );
       toaster.create({
-        title: "User created successfully",
+        title: "Đăng ký thành công",
         type: "success",
       });
       localStorage.setItem("userInfo", JSON.stringify(data));
@@ -95,6 +105,47 @@ const Signup = () => {
               onChange={(e) => setEmail(e.target.value)}
             />
           </Field.Root>
+          <HStack gap="10">
+            <Field.Root required>
+              <Field.Label>
+                Ngày sinh
+                <Field.RequiredIndicator />
+              </Field.Label>
+              <Input
+                type="date"
+                placeholder="Chọn ngày sinh"
+                onChange={(e) => setDateOfBirth(e.target.value)}
+              />
+            </Field.Root>
+
+            <VStack align="flex-start" spacing="2">
+              <Field.Root required>
+                <Field.Label>
+                  Giới tính
+                  <Field.RequiredIndicator />
+                </Field.Label>
+              </Field.Root>
+              <RadioGroup.Root
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                colorPalette="blue"
+                size="sm"
+              >
+                <HStack gap="6">
+                  <RadioGroup.Item value="male">
+                    <RadioGroup.ItemHiddenInput />
+                    <RadioGroup.ItemIndicator />
+                    <RadioGroup.ItemText>Nam</RadioGroup.ItemText>
+                  </RadioGroup.Item>
+                  <RadioGroup.Item value="female">
+                    <RadioGroup.ItemHiddenInput />
+                    <RadioGroup.ItemIndicator />
+                    <RadioGroup.ItemText>Nữ</RadioGroup.ItemText>
+                  </RadioGroup.Item>
+                </HStack>
+              </RadioGroup.Root>
+            </VStack>
+          </HStack>
 
           <Field.Root required>
             <Field.Label>
