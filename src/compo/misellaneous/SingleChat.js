@@ -1,3 +1,4 @@
+import EmojiPicker from "emoji-picker-react";
 import React, { useState, useEffect } from "react";
 import { ChatState } from "../../context/ChatProvider";
 import {
@@ -11,10 +12,9 @@ import {
 } from "@chakra-ui/react";
 import { FaArrowLeft, FaPhone, FaVideo } from "react-icons/fa";
 import { getSender } from "../../config/ChatLogic";
-// import socket from "../../context/socket";
+import socket from "../../context/socket";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from "axios";
-import { io } from "socket.io-client";
 import ScrollableChat from "./ScrollableChat";
 import {
   RiImageLine,
@@ -22,17 +22,18 @@ import {
   RiDeleteBin6Line,
 } from "react-icons/ri";
 
-const socket = io("http://localhost:5000", {
-  transports: ["websocket"],
-});
+// const socket = io("http://localhost:5000", {
+//   transports: ["websocket"],
+// });
 
-const SingleChat = ({ fetchAgain, setFetchAgain }) => {
+const SingleChat = ({ fetchAgain, setFetchAgain, Message }) => {
   const { user, selectedChat, setSelectedChat } = ChatState();
   const navigate = useNavigate(); // Khởi tạo hook điều hướng
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // const sendMessage = async () => {
   //   if (!newMessage.trim()) return;
@@ -86,6 +87,11 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
+  const onEmojiClick = (emojiObject) => {
+    setNewMessage((prevMessage) => prevMessage + emojiObject.emoji); // Thêm emoji vào tin nhắn
+    setShowEmojiPicker(false); // Đóng emoji picker sau khi chọn emoji
+  };
+
   const recallMessage = async (messageId) => {
     const message = messages.find((msg) => msg._id === messageId);
 
@@ -103,7 +109,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       messageDate.getFullYear() === today.getFullYear();
 
     if (!isSameDay) {
-      alert("Chỉ có thể thu hồi tin nhắn được gửi hôm nay.");
+      alert("Bạn chỉ có thể thu hồi tin nhắn trong ngày.");
       return;
     }
 
@@ -154,6 +160,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         )
       );
     };
+
     socket.emit("joinChat", selectedChat._id);
     socket.on("messageReceived", handleMessage);
     socket.on("messageRecalled", handleRecall);
@@ -299,6 +306,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   messages={messages}
                   recallMessage={recallMessage}
                   deleteMessageForMe={deleteMessageForMe}
+                  setMessages={setMessages}
                 />
               </div>
             )}
@@ -347,6 +355,30 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   onChange={(e) => setNewMessage(e.target.value)}
                   variant={"subtle"}
                 />
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <Button
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    variant="ghost"
+                  >
+                    😀
+                  </Button>
+
+                  {showEmojiPicker && (
+                    <div
+                      style={{
+                        position: "fixed",
+                        bottom: "80px",
+                        right: "0",
+                        zIndex: 1000,
+                        background: "#fff",
+                        boxShadow: "0 4px 8px rgba(0,0,0,0.15)",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <EmojiPicker onEmojiClick={onEmojiClick} />
+                    </div>
+                  )}
+                </div>
 
                 <Button onClick={sendMessage} colorScheme="blue">
                   Gửi
