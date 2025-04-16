@@ -1,16 +1,6 @@
 import React, { useState } from "react";
 import { HStack, VStack } from "@chakra-ui/react";
-import {
-  Button,
-  Field,
-  Fieldset,
-  For,
-  Input,
-  NativeSelect,
-  Stack,
-  Link,
-  Text,
-} from "@chakra-ui/react";
+import { Button, Field, Fieldset, Input, Link } from "@chakra-ui/react";
 import { PasswordInput } from "../../components/ui/password-input";
 import { toaster } from "../../components/ui/toaster";
 import axios from "axios";
@@ -51,6 +41,7 @@ const Signin = () => {
       localStorage.setItem("userInfo", JSON.stringify(data));
       setLoading(false);
       navigate("/chats");
+      window.location.reload();
     } catch (err) {
       toaster.create({
         title: err.response?.data?.error || "Có lỗi xảy ra!",
