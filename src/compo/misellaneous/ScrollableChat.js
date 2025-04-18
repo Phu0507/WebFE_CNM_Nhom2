@@ -6,12 +6,18 @@ import {
   isSameSender,
   isSameSenderMargin,
   isSameUser,
+  shouldShowTimestamp,
+  getDateLabel,
 } from "../../config/ChatLogic";
 import { ChatState } from "../../context/ChatProvider";
-import { Avatar } from "@chakra-ui/react";
-import { Tooltip } from "../../components/ui/tooltip";
+import { Avatar, Input } from "@chakra-ui/react";
 import { useId, useState } from "react";
 import socket from "../../context/socket";
+import Lightbox from "react-image-lightbox";
+import "react-image-lightbox/style.css"; // Nhớ import CSS để Lightbox hoạt động
+import { VStack, HStack } from "@chakra-ui/react";
+import { RiDownload2Line } from "react-icons/ri";
+import { FaDownload } from "react-icons/fa";
 
 const ScrollableChat = ({
   messages,
@@ -20,16 +26,14 @@ const ScrollableChat = ({
   setMessages,
 }) => {
   const { user } = ChatState();
-  const id = useId();
-  const [selectedMsgId, setSelectedMsgId] = useState(null);
+  // const id = useId();
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [newContent, setNewContent] = useState("");
 
-  // const socket = io("http://localhost:5000", {
-  //   transports: ["websocket"],
-  // });
-
+  const [isOpen, setIsOpen] = useState(false); // Mở lightbox
+  const [photoIndex, setPhotoIndex] = useState(0); // Chỉ số ảnh trong lightbox
+  let shownDates = new Set();
   const handleEditMessage = (message) => {
     setEditingMessage(message);
     setNewContent(message.content);
@@ -39,7 +43,6 @@ const ScrollableChat = ({
     if (newContent.trim() === "") return; // Kiểm tra nếu nội dung trống
 
     try {
-      // Gọi API PUT để lưu tin nhắn chỉnh sửa
       const response = await axios.put(
         `http://localhost:5000/api/message/edit/${editingMessage._id}`, // Đường dẫn API chỉnh sửa tin nhắn
         { content: newContent }, // Gửi nội dung mới
@@ -48,16 +51,14 @@ const ScrollableChat = ({
       console.log("Response from API:", response);
 
       if (response.status === 200) {
-        // Sau khi lưu thành công, cập nhật tin nhắn trong state
         const updatedMessages = messages.map((message) =>
           message._id === editingMessage._id
-            ? { ...message, content: newContent } // Cập nhật nội dung tin nhắn
+            ? { ...message, content: newContent, isEdited: true } // Cập nhật nội dung tin nhắn
             : message
         );
 
         setMessages(updatedMessages); // Cập nhật lại danh sách tin nhắn
         socket.emit("messageEdited", response.data);
-        // Reset form chỉnh sửa
         setEditingMessage(null);
         setNewContent("");
       }
@@ -83,58 +84,72 @@ const ScrollableChat = ({
       socket.off("messageEdited", handleEdit); // 👈 GỠ BỎ
     };
   });
+
+  const imageMessages = messages.filter(
+    (msg) => msg.type === "image" && msg.fileUrl && !msg.isRecalled
+  );
+
   return (
     <ScrollableFeed>
       {messages &&
-        messages.map((m, i) => (
-          <div style={{ display: "flex" }} key={m._id}>
-            {(isSameSender(messages, m, i, user._id) ||
-              isLastMessage(messages, i, user._id)) && (
-                <Tooltip
-                  ids={{ trigger: id }}
-                  content={m.sender.fullName}
-                  positioning={{ placement: "right-end" }}
-                >
-                  <Avatar.Root
-                    ids={{ root: id }}
-                    cursor={"pointer"}
-                    mt={4}
-                    mr={1}
-                    size={"md"}
+        messages.map((m, i) => {
+          const messageDate = new Date(m.createdAt);
+          const label = getDateLabel(messageDate);
+
+          const shouldShowDate = !shownDates.has(label); // chỉ hiển thị nếu chưa hiện label này
+
+          if (shouldShowDate) shownDates.add(label);
+
+          return (
+            <React.Fragment key={m._id}>
+              {shouldShowDate && (
+                <div style={{ textAlign: "center" }}>
+                  <div
+                    style={{
+                      display: "inline-block",
+                      margin: "20px 0",
+                      fontSize: "14px",
+                      color: "white",
+                      backgroundColor: "gray",
+                      padding: "4px 10px",
+                      borderRadius: "20px",
+                    }}
                   >
+                    {label}
+                  </div>
+                </div>
+              )}
+              <HStack key={m._id} gap={0} align={"flex-end"}>
+                {(isSameSender(messages, m, i, user._id) ||
+                  isLastMessage(messages, i, user._id)) && (
+                  <Avatar.Root cursor={"pointer"} mr={1} size={"md"}>
                     <Avatar.Image src={m.sender.avatar} />
                     <Avatar.Fallback name={m.sender.fullName} />
                   </Avatar.Root>
-                </Tooltip>
-              )}
+                )}
 
-            {/* Bọc span + menu trong div để kiểm soát hover */}
-            <div
-              style={{
-                position: "relative",
-                maxWidth: "75%",
-                marginLeft: isSameSenderMargin(messages, m, i, user._id),
-                marginTop: isSameUser(messages, m, i, user._id) ? 10 : 15,
-              }}
-              onMouseEnter={() => setHoveredMsgId(m._id)}
-              onMouseLeave={() => setHoveredMsgId(null)}
-            >
-              {hoveredMsgId === m._id && (
+                {/* Bọc span + menu trong div để kiểm soát hover */}
                 <div
                   style={{
-                    position: "absolute",
-                    top: "50%",
-                    left:
-                      m.sender._id === user._id ? "-160px" : "calc(100% + 4px)",
-                    transform: "translateY(-50%)",
+                    maxWidth: "75%",
+                    marginLeft: isSameSenderMargin(messages, m, i, user._id),
+                    marginTop: isSameUser(messages, m, i, user._id) ? 10 : 15,
+                    // backgroundColor: "red",
                     display: "flex",
-                    gap: "4px",
-                    zIndex: 10,
+                    alignItems: "flex-end",
                   }}
+                  onMouseEnter={() => setHoveredMsgId(m._id)}
+                  onMouseLeave={() => setHoveredMsgId(null)}
                 >
-                  {/* Chỉ hiển thị "Thu hồi", "Xóa" nếu là tin nhắn của mình */}
-                  {m.sender._id === user._id && (
-                    <>
+                  {hoveredMsgId === m._id && m.sender._id === user._id && (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "6px",
+                        marginBottom: "6px",
+                        marginRight: "4px",
+                      }}
+                    >
                       <button
                         onClick={() => recallMessage(m._id)}
                         style={{
@@ -174,253 +189,270 @@ const ScrollableChat = ({
                       >
                         Chỉnh sửa
                       </button>
-                    </>
+                    </div>
                   )}
-                </div>
-              )}
-
-              <div
-                onClick={() =>
-                  setSelectedMsgId(selectedMsgId === m._id ? null : m._id)
-                }
-                style={{
-                  backgroundColor:
-                    m.sender._id === user._id ? "#BEE3F8" : "white",
-                  borderRadius: "20px",
-                  padding: "10px 15px",
-                  display: "inline-block",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  cursor: "pointer",
-                }}
-              >
-                {m.isRecalled ? (
-                  <em style={{ fontStyle: "italic", color: "#A0AEC0" }}>
-                    Tin nhắn đã thu hồi
-                  </em>
-                ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    {/* Text nếu có */}
-                    {editingMessage?._id === m._id ? (
-                      <>
-                        <textarea
-                          value={newContent}
-                          onChange={(e) => setNewContent(e.target.value)}
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            borderRadius: "8px",
-                            border: "1px solid #ccc",
-                            fontSize: "14px",
-                          }}
-                        />
+                  <VStack gap={0} align="flex-start">
+                    <div
+                      style={{
+                        backgroundColor:
+                          m.sender._id === user._id ? "#BEE3F8" : "white",
+                        borderRadius: "5px",
+                        padding: "5px 10px",
+                        display: "inline-block",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {m.isRecalled ? (
+                        <em style={{ fontStyle: "italic", color: "#A0AEC0" }}>
+                          Tin nhắn đã thu hồi
+                        </em>
+                      ) : (
                         <div
                           style={{
                             display: "flex",
-                            justifyContent: "flex-end",
-                            gap: "8px",
-                            marginTop: "5px",
+                            flexDirection: "column",
+                            gap: "6px",
                           }}
                         >
-                          <button
-                            onClick={handleSaveEditedMessage}
-                            style={{
-                              backgroundColor: "#3182CE",
-                              color: "white",
-                              padding: "6px 12px",
-                              borderRadius: "5px",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Lưu
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingMessage(null);
-                              setNewContent("");
-                            }}
-                            style={{
-                              backgroundColor: "#e53e3e",
-                              color: "white",
-                              padding: "6px 12px",
-                              borderRadius: "5px",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Hủy
-                          </button>
+                          {/* Text nếu có */}
+                          {editingMessage?._id === m._id ? (
+                            <>
+                              <Input
+                                value={newContent}
+                                onChange={(e) => setNewContent(e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px",
+                                  borderRadius: "8px",
+                                  border: "1px solid #ccc",
+                                  fontSize: "14px",
+                                  backgroundColor: "white",
+                                }}
+                              />
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "flex-end",
+                                  gap: "8px",
+                                  marginTop: "5px",
+                                }}
+                              >
+                                <button
+                                  onClick={handleSaveEditedMessage}
+                                  style={{
+                                    backgroundColor: "#3182CE",
+                                    color: "white",
+                                    padding: "6px 12px",
+                                    borderRadius: "5px",
+                                    fontSize: "13px",
+                                  }}
+                                >
+                                  Lưu
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingMessage(null);
+                                    setNewContent("");
+                                  }}
+                                  style={{
+                                    backgroundColor: "#e53e3e",
+                                    color: "white",
+                                    padding: "6px 12px",
+                                    borderRadius: "5px",
+                                    fontSize: "13px",
+                                  }}
+                                >
+                                  Hủy
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <span>{m.content}</span>
+                              {m.isEdited && (
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#718096",
+                                  }}
+                                >
+                                  (Đã chỉnh sửa)
+                                </span>
+                              )}
+                            </>
+                          )}
+
+                          {/* Ảnh nếu là ảnh */}
+                          {m.type === "image" && m.fileUrl && (
+                            <>
+                              <img
+                                src={m.fileUrl}
+                                alt="image"
+                                onClick={() => {
+                                  const index = imageMessages.findIndex(
+                                    (img) => img._id === m._id
+                                  );
+                                  setPhotoIndex(index);
+                                  setIsOpen(true);
+                                }}
+                                style={{
+                                  maxWidth: "500px",
+                                  width: "100%",
+                                  height: "250px",
+                                  objectFit: "cover",
+                                  borderRadius: "5px",
+                                  cursor: "pointer",
+                                }}
+                              />
+
+                              {/* Nút tải ảnh */}
+                              <div
+                                style={{
+                                  textAlign:
+                                    m.sender._id === user._id
+                                      ? "left"
+                                      : "right",
+                                }}
+                              >
+                                <a
+                                  href={m.fileUrl}
+                                  download
+                                  style={{
+                                    color: "#3182CE",
+                                    textDecoration: "underline",
+                                    cursor: "pointer",
+                                    display: "inline-block",
+                                  }}
+                                >
+                                  <RiDownload2Line size={20} />
+                                </a>
+                              </div>
+
+                              {/* Lightbox */}
+                              {isOpen && (
+                                <Lightbox
+                                  mainSrc={imageMessages[photoIndex].fileUrl}
+                                  nextSrc={
+                                    photoIndex < imageMessages.length - 1
+                                      ? imageMessages[photoIndex + 1].fileUrl
+                                      : undefined
+                                  }
+                                  prevSrc={
+                                    photoIndex > 0
+                                      ? imageMessages[photoIndex - 1].fileUrl
+                                      : undefined
+                                  }
+                                  onCloseRequest={() => setIsOpen(false)}
+                                  onMovePrevRequest={() =>
+                                    photoIndex > 0 &&
+                                    setPhotoIndex(photoIndex - 1)
+                                  }
+                                  onMoveNextRequest={() =>
+                                    photoIndex < imageMessages.length - 1 &&
+                                    setPhotoIndex(photoIndex + 1)
+                                  }
+                                  imageTitle={`Ảnh từ nhóm: ${imageMessages[photoIndex].chat.chatName}`}
+                                  imageCaption={`Gửi bởi: ${imageMessages[photoIndex].sender.fullName}`}
+                                />
+                              )}
+                            </>
+                          )}
+
+                          {/* File nếu là file đính kèm */}
+                          {m.type === "file" &&
+                            m.fileUrl &&
+                            (() => {
+                              const fileName = decodeURIComponent(
+                                m.fileUrl.split("/").pop()
+                              );
+                              const extension = fileName
+                                .split(".")
+                                .pop()
+                                .toLowerCase();
+                              const fileIcons = {
+                                pdf: "📄",
+                                doc: "📄",
+                                docx: "📄",
+                                xls: "📊",
+                                xlsx: "📊",
+                                ppt: "📽️",
+                                pptx: "📽️",
+                                rar: "🗜️",
+                                zip: "🗜️",
+                                txt: "📄",
+                                mp3: "🎵",
+                                mp4: "🎞️",
+                                default: "📎",
+                              };
+                              const icon =
+                                fileIcons[extension] || fileIcons.default;
+
+                              return (
+                                <a
+                                  href={m.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    color: "#3182CE",
+                                    textDecoration: "underline",
+                                    fontSize: "14px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  <span style={{ fontSize: "18px" }}>
+                                    {icon}
+                                  </span>
+                                  {fileName}
+                                </a>
+                              );
+                            })()}
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        <span>{m.content}</span>
-                        {m.isEdited && (
+                      )}
+
+                      {/* Timeline nếu là tin nhắn đang được chọn */}
+                      {shouldShowTimestamp(messages, m, i) && (
+                        <div
+                          style={{
+                            marginTop: "5px",
+                            fontSize: "12px",
+                            color: "#718096",
+                            textAlign:
+                              m.sender._id === user._id ? "left" : "right",
+                          }}
+                        >
+                          {new Date(m.createdAt).toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {(isSameSender(messages, m, i, user._id) ||
+                      isLastMessage(messages, i, user._id)) && (
+                      <div style={{ marginBottom: "-4px" }}>
+                        {m.chat.isGroupChat && (
                           <span
                             style={{
-                              fontSize: "11px",
-                              color: "#718096",
-                              marginLeft: "6px",
+                              fontSize: "12px",
+                              color: "#4A5568",
+                              fontWeight: "bold",
                             }}
                           >
-                            (đã chỉnh sửa)
+                            {m.sender.fullName}
                           </span>
                         )}
-                      </>
+                      </div>
                     )}
-
-                    {/* Ảnh nếu là ảnh */}
-                    {m.type === "image" && m.fileUrl && (
-                      <img
-                        src={m.fileUrl}
-                        alt="image"
-                        onClick={(e) => {
-                          e.stopPropagation(); // không toggle thời gian
-                          window.open(m.fileUrl, "_blank");
-                        }}
-                        style={{
-                          width: "160px",
-                          height: "160px",
-                          objectFit: "cover",
-                          borderRadius: "10px",
-                          cursor: "pointer",
-                          transition: "transform 0.2s",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.currentTarget.style.transform = "scale(1.03)")
-                        }
-                        onMouseOut={(e) =>
-                          (e.currentTarget.style.transform = "scale(1)")
-                        }
-                      />
-                    )}
-
-                    {/* File nếu là file đính kèm */}
-                    {m.type === "file" &&
-                      m.fileUrl &&
-                      (() => {
-                        const fileName = decodeURIComponent(
-                          m.fileUrl.split("/").pop()
-                        );
-                        const extension = fileName
-                          .split(".")
-                          .pop()
-                          .toLowerCase();
-                        const fileIcons = {
-                          pdf: "📄",
-                          doc: "📄",
-                          docx: "📄",
-                          xls: "📊",
-                          xlsx: "📊",
-                          ppt: "📽️",
-                          pptx: "📽️",
-                          rar: "🗜️",
-                          zip: "🗜️",
-                          txt: "📄",
-                          mp3: "🎵",
-                          mp4: "🎞️",
-                          default: "📎",
-                        };
-                        const icon = fileIcons[extension] || fileIcons.default;
-
-                        return (
-                          <a
-                            href={m.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              color: "#3182CE",
-                              textDecoration: "underline",
-                              fontSize: "14px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            <span style={{ fontSize: "18px" }}>{icon}</span>
-                            {fileName}
-                          </a>
-                        );
-                      })()}
-                  </div>
-                )}
-
-                {/* Timeline nếu là tin nhắn đang được chọn */}
-                {selectedMsgId === m._id && (
-                  <div
-                    style={{
-                      marginTop: "5px",
-                      fontSize: "12px",
-                      color: "#718096",
-                      textAlign: "right",
-                    }}
-                  >
-                    {new Date(m.createdAt).toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
-                    •{" "}
-                    {new Date(m.createdAt).toLocaleDateString("vi-VN", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      {/* Hiển thị form chỉnh sửa tin nhắn
-      {editingMessage && (
-        <div style={{ marginTop: "10px" }}>
-          <textarea
-            value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
-            style={{
-              width: "100%",
-              height: "60px",
-              padding: "10px",
-              borderRadius: "10px",
-              border: "1px solid #ccc",
-              fontSize: "14px",
-            }}
-          />
-          <div style={{ marginTop: "5px", textAlign: "right" }}>
-            <button
-              onClick={handleSaveEditedMessage}
-              style={{
-                backgroundColor: "#3182CE",
-                color: "white",
-                padding: "8px 12px",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              Lưu
-            </button>
-            <button
-              onClick={() => setEditingMessage(null)}
-              style={{
-                marginLeft: "10px",
-                backgroundColor: "#f56565",
-                color: "white",
-                padding: "8px 12px",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              Hủy
-            </button>
-          </div>
-        </div>
-      )} */}
+                  </VStack>
+                </div>
+              </HStack>
+            </React.Fragment>
+          );
+        })}
     </ScrollableFeed>
   );
 };

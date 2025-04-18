@@ -68,6 +68,7 @@ const Signup = () => {
       localStorage.setItem("userInfo", JSON.stringify(data));
       setLoading(false);
       navigate("/chats");
+      window.location.reload();
     } catch (err) {
       toaster.create({
         title: err.response?.data?.error || "Có lỗi xảy ra!",

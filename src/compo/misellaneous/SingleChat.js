@@ -26,7 +26,7 @@ import {
 //   transports: ["websocket"],
 // });
 
-const SingleChat = ({ fetchAgain, setFetchAgain, Message }) => {
+const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const { user, selectedChat, setSelectedChat } = ChatState();
   const navigate = useNavigate(); // Khởi tạo hook điều hướng
   const [messages, setMessages] = useState([]);
@@ -77,7 +77,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain, Message }) => {
       );
 
       const newMsg = res.data;
-      // setMessages((prev) => [...prev, newMsg]);
+      setMessages((prev) => [...prev, newMsg]);
       socket.emit("newMessage", newMsg);
       setNewMessage("");
       setSelectedFile(null);
@@ -331,7 +331,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain, Message }) => {
                   }}
                 />
                 <label htmlFor="imageUpload">
-                  <RiImageLine size={30} cursor="pointer" />
+                  <RiImageLine size={20} cursor="pointer" />
                 </label>
 
                 {/* File Input (non-image) */}
@@ -346,15 +346,22 @@ const SingleChat = ({ fetchAgain, setFetchAgain, Message }) => {
                   }}
                 />
                 <label htmlFor="fileUpload">
-                  <RiAttachmentLine size={30} cursor="pointer" />
+                  <RiAttachmentLine size={20} cursor="pointer" />
                 </label>
 
                 <Input
                   placeholder="Nhập tin nhắn..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault(); // Ngăn xuống dòng nếu đang dùng textarea
+                      sendMessage(); // Gọi hàm gửi tin nhắn
+                    }
+                  }}
                   variant={"subtle"}
                 />
+
                 <div style={{ position: "relative", display: "inline-block" }}>
                   <Button
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -380,7 +387,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain, Message }) => {
                   )}
                 </div>
 
-                <Button onClick={sendMessage} colorScheme="blue">
+                <Button onClick={sendMessage} backgroundColor={"blue.600"}>
                   Gửi
                 </Button>
               </HStack>
