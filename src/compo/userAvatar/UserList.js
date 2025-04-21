@@ -1,8 +1,10 @@
 import React from "react";
-import { Box, Avatar, Text, Flex } from "@chakra-ui/react";
+import { Box, Avatar, Text, Flex, Badge } from "@chakra-ui/react";
 import { FaCheck } from "react-icons/fa";
 
-const UserList = ({ user, isSelected, handleToggle }) => {
+const UserList = ({ user, isSelected, handleToggle, existingMembers = [] }) => {
+  const isInGroup = existingMembers.some((u) => u._id === user._id);
+
   return (
     <Box
       display="flex"
@@ -10,9 +12,12 @@ const UserList = ({ user, isSelected, handleToggle }) => {
       justifyContent="space-between"
       py="2"
       borderRadius="md"
-      cursor="pointer"
-      _hover={{ bg: "gray.100" }}
-      onClick={() => handleToggle(user)}
+      cursor={isInGroup ? "not-allowed" : "pointer"}
+      _hover={{ bg: isInGroup ? "transparent" : "gray.100" }}
+      onClick={() => {
+        if (!isInGroup) handleToggle(user);
+      }}
+      opacity={isInGroup ? 0.6 : 1}
     >
       <Flex align="center">
         <Box
@@ -20,13 +25,13 @@ const UserList = ({ user, isSelected, handleToggle }) => {
           h="17px"
           borderRadius="full"
           border="2px solid #ccc"
-          bg={isSelected ? "blue.600" : "transparent"}
+          bg={isSelected || isInGroup ? "blue.600" : "transparent"}
           display="flex"
           alignItems="center"
           justifyContent="center"
           mr="2"
         >
-          {isSelected && <FaCheck color="white" size="10px" />}
+          {(isSelected || isInGroup) && <FaCheck color="white" size="10px" />}
         </Box>
         <Avatar.Root size="lg" cursor="pointer">
           <Avatar.Fallback name={user.fullName} />
@@ -36,6 +41,12 @@ const UserList = ({ user, isSelected, handleToggle }) => {
           <Text fontWeight="semibold" fontSize="sm">
             {user.fullName}
           </Text>
+          {/* Ghi chú "Đã tham gia" nếu đã là thành viên */}
+          {isInGroup && (
+            <Badge colorPalette="green" fontSize="xs" mt="1">
+              Đã tham gia
+            </Badge>
+          )}
         </Box>
       </Flex>
     </Box>

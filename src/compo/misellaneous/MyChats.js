@@ -8,36 +8,152 @@ import { getSender } from "../../config/ChatLogic";
 import ChatAvatars from "../../config/ChatAvatars";
 import GroupChatModal from "./GroupChatModal";
 import { RiUserLine, RiAddLine, RiUserAddLine } from "react-icons/ri";
+import socket from "../../context/socket";
 
 const MyChats = ({ fetchAgain }) => {
   const { user, selectedChat, setSelectedChat, chats, setChats } = ChatState();
   const [loggedInUser, setLoggedInUser] = useState();
   const [loading, setLoading] = useState(true);
 
-  const fetchChats = async () => {
-    try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      };
-      const { data } = await axios.get("/api/chat", config);
-      setChats(data);
-      setLoading(false);
-    } catch (error) {
-      toaster.create({
-        title: "Failed to load the chats",
-        type: "error",
-      });
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     setLoggedInUser(JSON.parse(localStorage.getItem("userInfo")));
+    const fetchChats = async () => {
+      try {
+        const config = {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        };
+        const { data } = await axios.get("/api/chat", config);
+        setChats(data);
+        setLoading(false);
+      } catch (error) {
+        toaster.create({
+          title: "Failed to load the chats",
+          type: "error",
+        });
+        setLoading(false);
+      }
+    };
     fetchChats();
-  }, [fetchAgain]);
+  }, [fetchAgain, setChats, user.token]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    socket.emit("setup", user._id);
+
+    socket.on("admin:transferred", ({ chatId, newAdminId }) => {
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat._id === chatId
+            ? { ...chat, groupAdmin: { _id: newAdminId } }
+            : chat
+        )
+      );
+
+      if (selectedChat?._id === chatId) {
+        setSelectedChat((prev) => ({
+          ...prev,
+          groupAdmin: { _id: newAdminId },
+        }));
+      }
+    });
+
+    socket.on("group:new", (newGroup) => {
+      setChats((prevChats) => [newGroup, ...prevChats]);
+      console.log("Nhận được nhóm mới từ server qua socket:", newGroup);
+    });
+    socket.on("group:info", (message) => {
+      toaster.create({
+        title: `${message}`,
+        type: "info",
+      });
+    });
+    return () => {
+      socket.off("admin:transferred");
+      socket.off("group:new");
+      socket.off("group:info");
+    };
+  }, [user, selectedChat, setChats, setSelectedChat]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const handleGroupUpdated = (updatedChat) => {
+      setChats((prevChats) => {
+        const alreadyExists = prevChats.some(
+          (chat) => chat._id === updatedChat._id
+        );
+
+        if (alreadyExists) {
+          return prevChats.map((chat) =>
+            chat._id === updatedChat._id ? updatedChat : chat
+          );
+        } else {
+          return [updatedChat, ...prevChats];
+        }
+      });
+
+      if (selectedChat && updatedChat._id === selectedChat._id) {
+        const oldUserIds = selectedChat.users.map((u) => u._id.toString());
+        const newUsers = updatedChat.users.filter(
+          (u) => !oldUserIds.includes(u._id.toString())
+        );
+
+        if (newUsers.length > 0) {
+          const names = newUsers.map((u) => u.fullName).join(", ");
+          toaster.create({
+            title: `${names} đã được thêm vào nhóm!`,
+            type: "info",
+          });
+        }
+
+        setSelectedChat(updatedChat);
+      }
+    };
+
+    socket.on("group:updated", handleGroupUpdated);
+
+    return () => {
+      socket.off("group:updated", handleGroupUpdated);
+    };
+  }, [user, selectedChat, setChats, setSelectedChat]);
+
+  useEffect(() => {
+    socket.on("group:removed", (chatId) => {
+      setChats((prev) => prev.filter((chat) => chat._id !== chatId));
+      if (selectedChat?._id === chatId) {
+        setSelectedChat(null);
+      }
+      toaster.create({
+        title: "Bạn bị xóa khỏi nhóm",
+        type: "info",
+      });
+    });
+
+    return () => {
+      socket.off("group:removed");
+    };
+  }, [setChats, selectedChat, setSelectedChat]);
+
+  useEffect(() => {
+    socket.on("group:deleted", ({ chatId }) => {
+      setChats((prev) => prev.filter((chat) => chat._id !== chatId));
+
+      if (selectedChat?._id === chatId) {
+        setSelectedChat(null);
+      }
+      toaster.create({
+        title: "Nhóm đã giải tán",
+        type: "info",
+      });
+    });
+
+    return () => {
+      socket.off("group:deleted");
+    };
+  }, [setChats, selectedChat, setSelectedChat]);
   return (
     <Box
       display={{ base: selectedChat ? "none" : "flex", md: "flex" }}

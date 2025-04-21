@@ -10,12 +10,7 @@ import {
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 import axios from "axios";
-import {
-  RiUserLine,
-  RiGroupLine,
-  RiAddLine,
-  RiUserAddLine,
-} from "react-icons/ri";
+import { RiUserAddLine } from "react-icons/ri";
 import { Tooltip } from "../../components/ui/tooltip";
 import { ChatState } from "../../context/ChatProvider";
 import { toaster } from "../../components/ui/toaster";
@@ -24,19 +19,17 @@ import ChatLoading from "./ChatLoading";
 import UserBadgeItem from "../userAvatar/UserBadgeItem";
 import socket from "../../context/socket";
 
-const GroupChatModal = () => {
+const AddUserModal = ({ fetchAgain, setFetchAgain }) => {
   const [open, setOpen] = useState(false);
-  const [groupChatName, setGroupChatName] = useState();
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [search, setSearch] = useState();
   const [searchResult, setSearchResult] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingButton, setLoadingButton] = useState(false);
 
-  const { user, setSelectedChat } = ChatState();
+  const { user, selectedChat, setSelectedChat } = ChatState();
 
   const resetForm = () => {
-    setGroupChatName("");
     setSelectedUsers([]);
     setSearch("");
     setSearchResult([]);
@@ -77,25 +70,26 @@ const GroupChatModal = () => {
           Authorization: `Bearer ${user.token}`,
         },
       };
-      const { data } = await axios.post(
-        "/api/chat/group",
+      const { data } = await axios.put(
+        "/api/chat/groupadd",
         {
-          name: groupChatName,
-          users: JSON.stringify(selectedUsers.map((u) => u._id)),
+          chatId: selectedChat._id,
+          userId: selectedUsers.map((u) => u._id),
         },
         config
       );
-      socket.emit("group:new", data);
       resetForm();
       setOpen(false);
+      socket.emit("group:updated", data);
       setSelectedChat(data);
+      setFetchAgain(!fetchAgain);
       toaster.create({
-        title: "Tạo nhóm thành công",
+        title: "Thêm thành công",
         type: "success",
       });
     } catch (err) {
       toaster.create({
-        title: err.response?.data?.error || "Không tạo được nhóm!",
+        title: err.response?.data?.error || "Không thêm được!",
         type: "error",
       });
     } finally {
@@ -128,11 +122,10 @@ const GroupChatModal = () => {
         if (!e.open) resetForm();
       }}
     >
-      <Tooltip content="Tạo nhóm chat" openDelay={300} closeDelay={100}>
+      <Tooltip content="Thêm thành viên" openDelay={300} closeDelay={100}>
         <Dialog.Trigger asChild>
           <Button variant="ghost" size="xs" gap="0">
-            <RiGroupLine />
-            <RiAddLine />
+            <RiUserAddLine />
           </Button>
         </Dialog.Trigger>
       </Tooltip>
@@ -141,17 +134,10 @@ const GroupChatModal = () => {
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header borderBottom="1px solid" borderColor="gray.200">
-              <Dialog.Title>Tạo nhóm</Dialog.Title>
+              <Dialog.Title>Thêm thành viên </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body pb="4">
               <Stack gap="4">
-                <Field.Root>
-                  <Input
-                    placeholder="Nhập tên nhóm"
-                    variant="flushed"
-                    onChange={(e) => setGroupChatName(e.target.value)}
-                  />
-                </Field.Root>
                 <Field.Root>
                   <Input
                     placeholder="Nhập tên hoặc email"
@@ -174,6 +160,7 @@ const GroupChatModal = () => {
                             (u) => u._id === user._id
                           )}
                           handleToggle={handleGroup}
+                          existingMembers={selectedChat?.users}
                         />
                       ))
                     )}
@@ -208,10 +195,10 @@ const GroupChatModal = () => {
               <Button
                 colorPalette={"blue"}
                 onClick={handleSubmit}
-                disabled={!groupChatName || selectedUsers.length < 2}
+                disabled={selectedUsers.length < 1}
                 loading={loadingButton}
               >
-                Tạo nhóm
+                Xác nhận
               </Button>
             </Dialog.Footer>
             <Dialog.CloseTrigger asChild>
@@ -223,5 +210,4 @@ const GroupChatModal = () => {
     </Dialog.Root>
   );
 };
-
-export default GroupChatModal;
+export default AddUserModal;

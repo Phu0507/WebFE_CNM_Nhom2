@@ -25,7 +25,7 @@ const UserListItem = ({ user, handleFunction }) => {
         <Text fontWeight="semibold" fontSize="sm">
           {user.fullName}
         </Text>
-        <Text fontSize="xs">{user.email}</Text>
+        {/* <Text fontSize="xs">{user.email}</Text> */}
       </Box>
     </Box>
   );

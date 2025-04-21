@@ -1,5 +1,5 @@
 import EmojiPicker from "emoji-picker-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ChatState } from "../../context/ChatProvider";
 import {
   Box,
@@ -9,6 +9,9 @@ import {
   Spinner,
   Input,
   VStack,
+  Flex,
+  Menu,
+  Portal,
 } from "@chakra-ui/react";
 import { FaArrowLeft, FaPhone, FaVideo } from "react-icons/fa";
 import { getSender } from "../../config/ChatLogic";
@@ -20,7 +23,18 @@ import {
   RiImageLine,
   RiAttachmentLine,
   RiDeleteBin6Line,
+  RiEdit2Line,
+  RiUserLine,
+  RiMore2Line,
+  RiGroupLine,
+  RiDeleteBinLine,
+  RiLogoutBoxRLine,
 } from "react-icons/ri";
+import RenameGroupModel from "./RenameGroupModel";
+import AddUserModal from "./AddUserModal";
+import UserGroupModal from "./UserGroupModal";
+import DeleteGroupModal from "./DeleteGroupModal";
+import DeleteUserModal from "./DeleteUserModal";
 
 // const socket = io("http://localhost:5000", {
 //   transports: ["websocket"],
@@ -34,6 +48,14 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const prevChatId = useRef(null);
+
+  const [isRenameOpen, setRenameOpen] = useState(false);
+  const [isUserOpen, setUserOpen] = useState(false);
+  const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [isLeaveOpen, setLeaveOpen] = useState(false);
 
   // const sendMessage = async () => {
   //   if (!newMessage.trim()) return;
@@ -77,7 +99,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       );
 
       const newMsg = res.data;
-      setMessages((prev) => [...prev, newMsg]);
+      // setMessages((prev) => [...prev, newMsg]);
       socket.emit("newMessage", newMsg);
       setNewMessage("");
       setSelectedFile(null);
@@ -148,7 +170,29 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   };
 
   useEffect(() => {
-    if (!selectedChat) return; // Kiểm tra null/undefined
+    if (!selectedChat) return;
+
+    if (prevChatId.current !== selectedChat._id) {
+      prevChatId.current = selectedChat._id;
+
+      const fetchMessages = async () => {
+        try {
+          setLoading(true);
+          const { data } = await axios.get(
+            `http://localhost:5000/api/message/${selectedChat._id}`,
+            { headers: { Authorization: `Bearer ${user.token}` } }
+          );
+          setMessages(data);
+          setLoading(false);
+        } catch (err) {
+          console.error("Lỗi tải tin nhắn:", err);
+        }
+      };
+
+      fetchMessages();
+
+      socket.emit("joinChat", selectedChat._id);
+    }
 
     const handleMessage = (message) => {
       setMessages((prev) => [...prev, message]);
@@ -161,26 +205,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       );
     };
 
-    socket.emit("joinChat", selectedChat._id);
     socket.on("messageReceived", handleMessage);
     socket.on("messageRecalled", handleRecall);
-
-    const fetchMessages = async () => {
-      try {
-        setLoading(true);
-        const { data } = await axios.get(
-          `http://localhost:5000/api/message/${selectedChat._id}`,
-          { headers: { Authorization: `Bearer ${user.token}` } }
-        );
-        setMessages(data);
-        console.log("du lie", data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Lỗi tải tin nhắn:", err);
-      }
-    };
-
-    fetchMessages();
 
     return () => {
       socket.off("messageReceived", handleMessage);
@@ -263,12 +289,48 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             {!selectedChat.isGroupChat ? (
               <>{getSender(user, selectedChat.users)}</>
             ) : (
-              <>{selectedChat.chatName}</>
+              <VStack gap={0} align="start">
+                <HStack
+                  onMouseEnter={() => setHovered(true)}
+                  onMouseLeave={() => setHovered(false)}
+                >
+                  <Text fontWeight="bold">{selectedChat.chatName}</Text>
+
+                  {hovered && (
+                    <Button
+                      size="2xs"
+                      variant={"subtle"}
+                      onClick={() => setRenameOpen(true)}
+                    >
+                      <RiEdit2Line />
+                    </Button>
+                  )}
+                </HStack>
+                <Flex
+                  fontSize="smaller"
+                  color="gray.600"
+                  align="center"
+                  cursor="pointer"
+                  _hover={{ color: "blue.500" }}
+                >
+                  <RiUserLine style={{ marginRight: "4px" }} />
+                  {selectedChat.users?.length} thành viên
+                </Flex>
+              </VStack>
             )}
             <HStack>
-              <Button variant="ghost" size="xs" gap="0">
-                <FaPhone></FaPhone>
-              </Button>
+              {!selectedChat.isGroupChat ? (
+                <>
+                  <Button variant="ghost" size="xs" gap="0">
+                    <FaPhone></FaPhone>
+                  </Button>
+                </>
+              ) : (
+                <AddUserModal
+                  fetchAgain={fetchAgain}
+                  setFetchAgain={setFetchAgain}
+                />
+              )}
               <Button
                 variant="ghost"
                 size="xs"
@@ -277,6 +339,65 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               >
                 <FaVideo></FaVideo>
               </Button>
+              <Menu.Root>
+                <Menu.Trigger asChild>
+                  <Button variant="outline" p={1} size={"xs"}>
+                    <RiMore2Line />
+                  </Button>
+                </Menu.Trigger>
+                <Portal>
+                  <Menu.Positioner>
+                    <Menu.Content>
+                      {/* Thành viên nhóm - chỉ hiện nếu là nhóm */}
+                      {selectedChat?.isGroupChat && (
+                        <Menu.Item
+                          value="members"
+                          cursor="pointer"
+                          onClick={() => setUserOpen(true)}
+                        >
+                          Thành viên nhóm
+                          <Menu.ItemCommand>
+                            <RiGroupLine />
+                          </Menu.ItemCommand>
+                        </Menu.Item>
+                      )}
+
+                      <Menu.Separator />
+
+                      {/* Nếu là nhóm */}
+                      {selectedChat?.isGroupChat ? (
+                        selectedChat.groupAdmin?._id === user._id ? (
+                          // Là trưởng nhóm => Hiện "Giải tán nhóm"
+                          <Menu.Item
+                            value="disband"
+                            cursor="pointer"
+                            color="red.600"
+                            onClick={() => setDeleteOpen(true)}
+                          >
+                            Giải tán nhóm
+                            <Menu.ItemCommand>
+                              <RiDeleteBinLine />
+                            </Menu.ItemCommand>
+                          </Menu.Item>
+                        ) : (
+                          // Không phải trưởng nhóm => Hiện "Rời nhóm"
+                          <Menu.Item
+                            value="leave"
+                            cursor="pointer"
+                            color="red.600"
+                            onClick={() => setLeaveOpen(true)}
+                          >
+                            Rời nhóm
+                            <Menu.ItemCommand>
+                              <RiLogoutBoxRLine />
+                            </Menu.ItemCommand>
+                          </Menu.Item>
+                        )
+                      ) : null}
+                    </Menu.Content>
+                  </Menu.Positioner>
+                </Portal>
+              </Menu.Root>
             </HStack>
           </Text>
           <Box
@@ -448,6 +569,39 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             toi la ai
           </Text>
         </Box>
+      )}
+      {isRenameOpen && (
+        <RenameGroupModel
+          isOpen={isRenameOpen}
+          onClose={() => setRenameOpen(false)}
+          fetchAgain={fetchAgain}
+          setFetchAgain={setFetchAgain}
+        />
+      )}
+      {isUserOpen && (
+        <UserGroupModal
+          isOpen={isUserOpen}
+          onClose={() => setUserOpen(false)}
+          fetchAgain={fetchAgain}
+          setFetchAgain={setFetchAgain}
+        />
+      )}
+      {isDeleteOpen && (
+        <DeleteGroupModal
+          isOpen={isDeleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          fetchAgain={fetchAgain}
+          setFetchAgain={setFetchAgain}
+        />
+      )}
+      {isLeaveOpen && (
+        <DeleteUserModal
+          isOpen={isLeaveOpen}
+          onClose={() => setLeaveOpen(false)}
+          fetchAgain={fetchAgain}
+          setFetchAgain={setFetchAgain}
+          userToDelete={user}
+        />
       )}
     </>
   );
