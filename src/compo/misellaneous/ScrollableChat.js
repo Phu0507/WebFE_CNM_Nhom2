@@ -18,6 +18,7 @@ import "react-image-lightbox/style.css"; // Nhớ import CSS để Lightbox ho�
 import { VStack, HStack } from "@chakra-ui/react";
 import { RiDownload2Line } from "react-icons/ri";
 import { FaDownload } from "react-icons/fa";
+import Linkify from "linkify-react";
 
 const ScrollableChat = ({
   messages,
@@ -269,7 +270,23 @@ const ScrollableChat = ({
                             </>
                           ) : (
                             <>
-                              <span>{m.content}</span>
+                              <Linkify
+                                options={{
+                                  target: "_blank",
+                                  rel: "noopener noreferrer",
+                                  className: "link-style",
+                                }}
+                              >
+                                {m.content}
+                              </Linkify>
+                              <style>
+                                {`
+                                .link-style {
+                                    color: #3182ce;
+                                    text-decoration: underline;
+                                  }
+                              `}
+                              </style>
                               {m.isEdited && (
                                 <span
                                   style={{
@@ -359,6 +376,25 @@ const ScrollableChat = ({
                             </>
                           )}
 
+                          {m.type === "video" && m.fileUrl && (
+                            <video
+                              controls
+                              style={{
+                                maxWidth: "400px",
+                                width: "100%",
+                                height: "500px",
+                                objectFit: "cover",
+                              }}
+                            >
+                              <source src={m.fileUrl} type="video/mp4" />
+                              Trình duyệt của bạn không hỗ trợ video.
+                            </video>
+                          )}
+                          {m.type === "audio" && m.fileUrl && (
+                            <audio controls src={m.fileUrl}>
+                              Trình duyệt không hỗ trợ phát âm thanh.
+                            </audio>
+                          )}
                           {/* File nếu là file đính kèm */}
                           {m.type === "file" &&
                             m.fileUrl &&

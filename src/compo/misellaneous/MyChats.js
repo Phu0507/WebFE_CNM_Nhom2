@@ -58,11 +58,21 @@ const MyChats = ({ fetchAgain }) => {
           groupAdmin: { _id: newAdminId },
         }));
       }
+      // toaster.create({
+      //   title: "Chuyển quyền trưởng nhóm",
+      //   description: `Quyền trưởng nhóm ${selectedChat.chatName} đã chuyển cho người khác`,
+      //   type: "info",
+      // });
     });
 
     socket.on("group:new", (newGroup) => {
       setChats((prevChats) => [newGroup, ...prevChats]);
       console.log("Nhận được nhóm mới từ server qua socket:", newGroup);
+      toaster.create({
+        title: "Nhóm mới",
+        description: `Bạn được thêm vào nhóm "${newGroup.chatName}" .`,
+        type: "info",
+      });
     });
     socket.on("group:info", (message) => {
       toaster.create({
@@ -127,7 +137,7 @@ const MyChats = ({ fetchAgain }) => {
         setSelectedChat(null);
       }
       toaster.create({
-        title: "Bạn bị xóa khỏi nhóm",
+        title: `Bạn bị xóa khỏi nhóm ${selectedChat.chatName} `,
         type: "info",
       });
     });
@@ -144,10 +154,10 @@ const MyChats = ({ fetchAgain }) => {
       if (selectedChat?._id === chatId) {
         setSelectedChat(null);
       }
-      toaster.create({
-        title: "Nhóm đã giải tán",
-        type: "info",
-      });
+      // toaster.create({
+      //   title: `Trưởng nhóm đã giải tán nhóm ${selectedChat.chatName}`,
+      //   type: "info",
+      // });
     });
 
     return () => {

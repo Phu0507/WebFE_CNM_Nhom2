@@ -80,9 +80,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     if (newMessage.trim()) formData.append("content", newMessage);
     if (selectedFile) {
       formData.append("file", selectedFile);
-
       const fileType = selectedFile.type;
-      const type = fileType.startsWith("image/") ? "image" : "file";
+
+      let type = "file"; // Mặc định là file
+      if (fileType.startsWith("image/")) {
+        type = "image";
+      } else if (fileType.startsWith("video/")) {
+        type = "video";
+      } else if (fileType.startsWith("audio/")) {
+        type = "audio";
+      }
       formData.append("type", type);
     }
 
@@ -312,6 +319,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   align="center"
                   cursor="pointer"
                   _hover={{ color: "blue.500" }}
+                  onClick={() => setUserOpen(true)}
                 >
                   <RiUserLine style={{ marginRight: "4px" }} />
                   {selectedChat.users?.length} thành viên
@@ -443,7 +451,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 {/* Image Input */}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*,audio/*"
                   style={{ display: "none" }}
                   id="imageUpload"
                   onChange={(e) => {
@@ -548,10 +556,33 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                         objectFit: "cover", // Đảm bảo ảnh không bị kéo dài
                       }}
                     />
+                  ) : selectedFile.type.startsWith("video/") ? (
+                    <Box textAlign="center">
+                      <video
+                        controls
+                        // src={URL.createObjectURL(selectedFile)}
+                        style={{
+                          maxHeight: "100px",
+                          borderRadius: "8px",
+                          objectFit: "cover",
+                        }}
+                      />
+
+                      {/* Hiển thị tên file video */}
+                      <Text truncate fontSize="xs" mt={1}>
+                        ▶{selectedFile.name}
+                      </Text>
+                    </Box>
+                  ) : selectedFile.type.startsWith("audio/") ? (
+                    <Box textAlign="center">
+                      <Text truncate fontSize="md">
+                        🎵{selectedFile.name}
+                      </Text>
+                    </Box>
                   ) : (
                     <Text truncate fontSize="md">
-                      📎{selectedFile.name}
-                    </Text> // Hiển thị tên file nếu không phải ảnh
+                      🔗{selectedFile.name}
+                    </Text>
                   )}
                 </Box>
               )}
@@ -565,8 +596,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           justifyContent={"center"}
           h="100%"
         >
-          <Text frontSize="3xl" pb={3} fontFamily="Work sans">
-            toi la ai
+          <Text fontSize="50px" fontFamily="Poppins" color="#0088FF">
+            Zalo
           </Text>
         </Box>
       )}

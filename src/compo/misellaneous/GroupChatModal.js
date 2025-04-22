@@ -70,6 +70,13 @@ const GroupChatModal = () => {
   };
 
   const handleSubmit = async () => {
+    if (groupChatName !== groupChatName.trim()) {
+      toaster.create({
+        title: "Tên nhóm không bắt đầu hoặc kết thúc bằng khoảng trống",
+        type: "error",
+      });
+      return;
+    }
     setLoadingButton(true);
     try {
       const config = {

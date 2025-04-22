@@ -47,7 +47,8 @@ const RenameGroupModel = ({ isOpen, onClose, fetchAgain, setFetchAgain }) => {
       onClose();
     } catch (error) {
       toaster.create({
-        title: error.response?.data?.message || "Có lỗi",
+        title:
+          error.response?.data?.message || "Trưởng nhóm mới có quyền đổi tên",
         type: "error",
       });
       setLoading(false);

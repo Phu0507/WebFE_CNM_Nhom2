@@ -31,7 +31,7 @@ const DeleteUserModal = ({
       );
       socket.emit("group:updated", data);
       if (userToDelete._id === user._id) {
-        setSelectedChat(null);
+        setSelectedChat();
       } else {
         setSelectedChat(data);
       }
